@@ -22,12 +22,33 @@ logger = get_logger(__name__)
 def test_proxy_pool_status():
     """测试代理池状态（无需认证）"""
     try:
+        import os
         proxy_pool = get_api_proxy_pool()
+
+        # 检查文件系统状态
+        config_file_exists = os.path.exists(proxy_pool.config_file)
+        config_content = None
+        config_size = 0
+
+        if config_file_exists:
+            try:
+                config_size = os.path.getsize(proxy_pool.config_file)
+                with open(proxy_pool.config_file, 'r', encoding='utf-8') as f:
+                    import json
+                    config_content = json.load(f)
+            except Exception as e:
+                config_content = f"读取错误: {str(e)}"
+
         return jsonify({
             'success': True,
             'data': {
                 'config_file': proxy_pool.config_file,
+                'config_file_exists': config_file_exists,
+                'config_file_size': config_size,
+                'third_party_apis_count': len(config_content.get('third_party_apis', [])) if isinstance(config_content, dict) else 0,
                 'proxy_count': len(proxy_pool.proxies),
+                'working_directory': os.getcwd(),
+                'app_files': os.listdir('/app') if os.path.exists('/app') else [],
                 'proxies': [
                     {
                         'name': proxy.name,
