@@ -19,7 +19,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 API_BASE = "https://new.crond.dev"
 
 # 测试API密钥 (需要替换为实际的API密钥)
-API_KEY = "sk-X97KBeoGxSSb1nk6ZlvQLTDNIreXF63PSWhiXYahdJzX4aQW"
+API_KEY = "your_api_key_here"
 
 # 要测试的模型列表
 TEST_MODELS = [
