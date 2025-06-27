@@ -16,7 +16,11 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 # 导入配置和服务
-from config import Config
+try:
+    from config import Config
+except ImportError:
+    # Railway环境下的备用导入方式
+    from load_config import Config
 from models.models import init_db
 from utils.logger import setup_logger
 from utils.auth import init_auth
