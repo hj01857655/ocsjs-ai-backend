@@ -23,13 +23,27 @@ def main():
     print(f"   PORT: {port}")
     print(f"   MYSQL_URL: {'已设置' if mysql_url else '未设置'}")
     
-    # 如果没有MYSQL_URL，强制设置一个
+    # 如果没有MYSQL_URL，尝试从单独的变量构建
     if not mysql_url:
-        print("⚠️ MYSQL_URL未设置，尝试使用Railway内部连接...")
-        # 使用Railway内部MySQL连接
-        mysql_url = "mysql://root:oypxmJcTSksIvFwuiIbspwNFRLNHVaAs@mysql.railway.internal:3306/railway"
+        print("⚠️ MYSQL_URL未设置，尝试从Railway变量构建连接...")
+
+        # 获取Railway MySQL的各个组件
+        mysql_host = os.environ.get('MYSQLHOST', 'mysql.railway.internal')
+        mysql_user = os.environ.get('MYSQLUSER', 'root')
+        mysql_password = os.environ.get('MYSQLPASSWORD', 'oypxmJcTSksIvFwuiIbspwNFRLNHVaAs')
+        mysql_port = os.environ.get('MYSQLPORT', '3306')
+        mysql_database = os.environ.get('MYSQL_DATABASE', 'railway')
+
+        print(f"🔍 MySQL组件变量:")
+        print(f"   MYSQLHOST: {mysql_host}")
+        print(f"   MYSQLUSER: {mysql_user}")
+        print(f"   MYSQLPORT: {mysql_port}")
+        print(f"   MYSQL_DATABASE: {mysql_database}")
+
+        # 构建连接字符串
+        mysql_url = f"mysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_database}"
         os.environ['MYSQL_URL'] = mysql_url
-        print(f"✅ 已设置MYSQL_URL: {mysql_url[:50]}...")
+        print(f"✅ 已构建MYSQL_URL: {mysql_url[:50]}...")
     
     try:
         # 导入配置
