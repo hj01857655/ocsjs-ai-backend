@@ -1,0 +1,37 @@
+Starting Container
+
+🚀 Railway启动脚本开始...
+
+📊 环境信息:
+
+   PORT: 8080
+
+   MYSQL_URL: 未设置
+
+   Python版本: 3.9.23 (main, Jun 10 2025, 23:50:54) 
+
+[GCC 12.2.0]
+
+   工作目录: /app
+
+📦 导入应用模块...
+
+✅ 配置模块导入成功
+
+✅ Flask导入成功
+
+✅ 基本路由设置完成
+
+📦 导入完整应用...
+
+✅ 容器环境：使用load_config模块导入Config
+
+⚠️ 完整应用导入失败，使用简化版本: (pymysql.err.OperationalError) (2003, "Can't connect to MySQL server on 'localhost' ([Errno 111] Connection refused)")
+
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+🌐 启动应用在端口 8080...
+
+ * Serving Flask app 'railway_start'
+
+ * Debug mode: off

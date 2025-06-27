@@ -24,8 +24,17 @@ def main():
     print(f"📊 环境信息:")
     print(f"   PORT: {port}")
     print(f"   MYSQL_URL: {'已设置' if mysql_url else '未设置'}")
+    if mysql_url:
+        print(f"   MYSQL_URL前50字符: {mysql_url[:50]}...")
     print(f"   Python版本: {sys.version}")
     print(f"   工作目录: {os.getcwd()}")
+
+    # 显示数据库相关的环境变量
+    print(f"🔍 数据库相关环境变量:")
+    for key in sorted(os.environ.keys()):
+        if any(keyword in key.upper() for keyword in ['MYSQL', 'DATABASE', 'DB_']):
+            value = os.environ[key]
+            print(f"   {key}: {value[:50]}..." if len(value) > 50 else f"   {key}: {value}")
     
     try:
         # 导入Flask应用
