@@ -1,0 +1,41 @@
+# Flask核心依赖
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-CORS==4.0.0
+
+# 数据库相关
+PyMySQL==1.1.0
+SQLAlchemy==2.0.21
+
+# Redis缓存
+redis==5.0.1
+
+# 认证相关
+PyJWT==2.8.0
+Werkzeug==2.3.7
+
+# HTTP请求
+requests==2.31.0
+urllib3==2.0.7
+
+# 数据处理
+pandas==2.1.1
+openpyxl==3.1.2
+
+# 系统监控
+psutil==5.9.6
+
+# 日志处理
+python-json-logger==2.0.7
+
+# 开发工具
+python-dotenv==1.0.0
+
+# WSGI服务器
+gunicorn==21.2.0
+
+# 其他工具
+click==8.1.7
+itsdangerous==2.1.2
+Jinja2==3.1.2
+MarkupSafe==2.1.3

@@ -1,0 +1,101 @@
+{
+  "name": "ocsjs-ai-backend",
+  "version": "2.0.0",
+  "description": "OCSJS AI智能题库系统后端 - 基于Python Flask的AI题目搜索服务",
+  "main": "app.py",
+  "scripts": {
+    "start": "python app.py",
+    "dev": "python app.py",
+    "test": "python -m pytest tests/",
+    "test:coverage": "python -m pytest --cov=. tests/",
+    "lint": "flake8 .",
+    "format": "black .",
+    "init-db": "python -c \"from models.models import init_db; init_db()\"",
+    "migrate": "python scripts/migrate.py",
+    "backup": "python scripts/backup.py",
+    "restore": "python scripts/restore.py"
+  },
+  "keywords": [
+    "ai",
+    "education",
+    "question-answering",
+    "flask",
+    "python",
+    "api",
+    "proxy-pool",
+    "openai",
+    "chatgpt"
+  ],
+  "author": "OCSJS AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hj01857655/ocsjs-ai-backend.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hj01857655/ocsjs-ai-backend/issues"
+  },
+  "homepage": "https://github.com/hj01857655/ocsjs-ai-backend#readme",
+  "engines": {
+    "python": ">=3.8"
+  },
+  "dependencies": {
+    "note": "Python dependencies are managed in requirements.txt"
+  },
+  "devDependencies": {
+    "note": "Python dev dependencies are managed in requirements-dev.txt"
+  },
+  "python": {
+    "main_module": "app",
+    "requirements": "requirements.txt",
+    "dev_requirements": "requirements-dev.txt",
+    "test_command": "python -m pytest",
+    "lint_command": "flake8 .",
+    "format_command": "black ."
+  },
+  "docker": {
+    "image": "ocsjs-ai-backend",
+    "port": 5000,
+    "build_command": "docker build -t ocsjs-ai-backend .",
+    "run_command": "docker run -d -p 5000:5000 ocsjs-ai-backend"
+  },
+  "deployment": {
+    "production": {
+      "command": "gunicorn -w 4 -b 0.0.0.0:5000 app:app",
+      "port": 5000,
+      "workers": 4
+    },
+    "development": {
+      "command": "python app.py",
+      "port": 5000,
+      "debug": true
+    }
+  },
+  "api": {
+    "base_url": "http://localhost:5000",
+    "version": "v1",
+    "endpoints": {
+      "health": "/health",
+      "auth": "/api/auth",
+      "questions": "/api/questions",
+      "users": "/api/users",
+      "admin": "/api/admin"
+    }
+  },
+  "database": {
+    "type": "mysql",
+    "version": "8.0+",
+    "required": true,
+    "migrations": "scripts/migrations/"
+  },
+  "cache": {
+    "type": "redis",
+    "required": false,
+    "fallback": "memory"
+  },
+  "monitoring": {
+    "health_check": "/health",
+    "metrics": "/api/system-monitor/stats",
+    "logs": "logs/"
+  }
+}

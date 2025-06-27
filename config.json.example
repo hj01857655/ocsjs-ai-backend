@@ -1,0 +1,54 @@
+{
+  "service": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false
+  },
+  "third_party_apis": [
+    {
+      "name": "示例API",
+      "api_base": "https://api.example.com",
+      "api_keys": [
+        "sk-your-api-key-here"
+      ],
+      "model": "gpt-4o-mini",
+      "models": [
+        "gpt-4o-mini",
+        "gpt-4o",
+        "deepseek-v3"
+      ],
+      "available_models": [
+        "gpt-4o-mini",
+        "gpt-4o"
+      ],
+      "is_active": true,
+      "priority": 1
+    }
+  ],
+  "cache": {
+    "enable": true,
+    "expiration": 2592000
+  },
+  "security": {
+    "access_token": null,
+    "secret_key": "your-secret-key-here-change-this-in-production"
+  },
+  "database": {
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "user": "your_username",
+    "password": "your_password",
+    "name": "your_database_name"
+  },
+  "redis": {
+    "enabled": false,
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0
+  },
+  "record": {
+    "enable": true
+  }
+}
