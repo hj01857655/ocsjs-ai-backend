@@ -20,7 +20,9 @@ sys.path.insert(0, project_root)
 def is_container_environment():
     """检测是否在容器或云环境中运行"""
     indicators = [
-        os.environ.get('RAILWAY_ENVIRONMENT'),  # Railway环境变量
+        os.environ.get('RAILWAY_STATIC_URL'),  # Railway静态URL
+        os.environ.get('RAILWAY_PROJECT_ID'),  # Railway项目ID
+        os.environ.get('RAILWAY_SERVICE_ID'),  # Railway服务ID
         os.environ.get('PORT'),  # 云平台通常设置PORT环境变量
         os.path.exists('/.dockerenv'),  # Docker容器标识文件
         os.environ.get('CONTAINER'),  # 通用容器环境变量
