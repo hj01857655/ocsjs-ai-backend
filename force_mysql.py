@@ -18,14 +18,21 @@ def main():
     # 检查环境变量
     port = os.environ.get('PORT', '5000')
     mysql_url = os.environ.get('MYSQL_URL')
-    
+
     print(f"📊 环境检查:")
     print(f"   PORT: {port}")
     print(f"   MYSQL_URL: {'已设置' if mysql_url else '未设置'}")
-    
-    # 如果没有MYSQL_URL，尝试从单独的变量构建
-    if not mysql_url:
-        print("⚠️ MYSQL_URL未设置，尝试从Railway变量构建连接...")
+    if mysql_url:
+        print(f"   MYSQL_URL值: {mysql_url[:50]}...")
+
+    # 如果MYSQL_URL为空或者是模板变量未解析，尝试其他方法
+    if not mysql_url or mysql_url.startswith('${{'):
+        if not mysql_url:
+            print("⚠️ MYSQL_URL未设置，尝试从Railway变量构建连接...")
+        else:
+            print(f"⚠️ MYSQL_URL模板变量未解析: {mysql_url}")
+            print("   请确保在应用服务Variables中设置: MYSQL_URL = ${{ MySQL.MYSQL_URL }}")
+            print("   尝试从单独变量构建连接...")
 
         # 获取Railway MySQL的各个组件
         mysql_host = os.environ.get('MYSQLHOST', 'mysql.railway.internal')
