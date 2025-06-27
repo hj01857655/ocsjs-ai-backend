@@ -41,6 +41,13 @@ def main():
         print("📦 导入应用模块...")
         from load_config import Config
         print("✅ 配置模块导入成功")
+
+        # 显示实际使用的数据库配置
+        print(f"🔗 数据库配置信息:")
+        print(f"   SQLALCHEMY_DATABASE_URI: {getattr(Config, 'SQLALCHEMY_DATABASE_URI', 'None')[:80]}...")
+        print(f"   DB_HOST: {getattr(Config, 'DB_HOST', 'None')}")
+        print(f"   DB_PORT: {getattr(Config, 'DB_PORT', 'None')}")
+        print(f"   DB_NAME: {getattr(Config, 'DB_NAME', 'None')}")
         
         from flask import Flask
         print("✅ Flask导入成功")
