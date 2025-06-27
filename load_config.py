@@ -15,30 +15,21 @@ sys.path.insert(0, project_root)
 # 加载JSON配置文件
 def load_config():
     config_file = os.path.join(project_root, 'config.json')
-
-    print(f"🔍 [load_config.py] 配置文件路径: {config_file}")
-    print(f"🔍 [load_config.py] 项目根目录: {project_root}")
-    print(f"🔍 [load_config.py] 配置文件是否存在: {os.path.exists(config_file)}")
-
     try:
         if os.path.exists(config_file):
             # 尝试多种编码方式
             for encoding in ['utf-8', 'utf-8-sig', 'gbk', 'cp1252']:
                 try:
                     with open(config_file, 'r', encoding=encoding) as f:
-                        config_data = json.load(f)
-                        print(f"✅ [load_config.py] 成功加载配置文件 (编码: {encoding})")
-                        return config_data
+                        return json.load(f)
                 except UnicodeDecodeError:
                     continue
                 except json.JSONDecodeError as e:
-                    print(f"❌ [load_config.py] JSON解析错误 (编码: {encoding}): {str(e)}")
+                    print(f"JSON解析错误 (编码: {encoding}): {str(e)}")
                     continue
-            print(f"❌ [load_config.py] 无法读取配置文件，尝试了多种编码方式")
-        else:
-            print(f"❌ [load_config.py] 配置文件不存在: {config_file}")
+            print(f"无法读取配置文件，尝试了多种编码方式")
     except Exception as e:
-        print(f"❌ [load_config.py] 读取配置文件出错: {str(e)}")
+        print(f"读取配置文件出错: {str(e)}")
     return {}
 
 # 全局配置
