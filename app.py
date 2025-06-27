@@ -29,6 +29,14 @@ def is_container_environment():
     return any(indicators)
 
 if is_container_environment():
+    # 容器/云环境，设置Railway MySQL连接
+    mysql_url = os.environ.get('MYSQL_URL')
+    if not mysql_url:
+        # 使用已知的Railway MySQL连接信息
+        mysql_url = "mysql://root:oypxmJcTSksIvFwuiIbspwNFRLNHVaAs@mysql.railway.internal:3306/railway"
+        os.environ['MYSQL_URL'] = mysql_url
+        print("🔧 已设置Railway MySQL连接")
+
     # 容器/云环境，直接使用load_config避免循环导入
     from load_config import Config
     print("✅ 容器环境：使用load_config模块导入Config")
