@@ -32,19 +32,22 @@ def test_database_connection():
         
         # 测试连接
         connection = pymysql.connect(
-            host=url.hostname,
+            host=url.hostname or 'localhost',
             port=url.port or 3306,
-            user=url.username,
-            password=url.password,
+            user=url.username or 'root',
+            password=url.password or '',
             database=url.path[1:] if url.path else "railway",
             charset='utf8mb4',
             connect_timeout=10
         )
-        
+
         with connection.cursor() as cursor:
             cursor.execute("SELECT VERSION()")
             version = cursor.fetchone()
-            print(f"✅ 数据库连接成功! MySQL版本: {version[0]}")
+            if version:
+                print(f"✅ 数据库连接成功! MySQL版本: {version[0]}")
+            else:
+                print("✅ 数据库连接成功!")
             
         connection.close()
         return True
