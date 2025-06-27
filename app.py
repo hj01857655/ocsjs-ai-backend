@@ -16,18 +16,21 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 # 导入配置和服务
-try:
-    from config import Config
-    print("✅ 成功从config模块导入Config")
-except ImportError as e:
-    print(f"❌ 从config模块导入失败: {e}")
+# 在Railway环境中直接使用load_config避免循环导入问题
+if os.environ.get('RAILWAY_ENVIRONMENT') or '/app/' in os.path.abspath(__file__):
+    # Railway环境或容器环境，直接使用load_config
+    from load_config import Config
+    print("✅ Railway环境：使用load_config模块导入Config")
+else:
+    # 本地开发环境，尝试使用config模块
     try:
-        # Railway环境下的备用导入方式
+        from config import Config
+        print("✅ 本地环境：成功从config模块导入Config")
+    except ImportError as e:
+        print(f"❌ 从config模块导入失败: {e}")
+        # 备用方案
         from load_config import Config
-        print("✅ 成功从load_config模块导入Config")
-    except ImportError as e2:
-        print(f"❌ 从load_config模块导入也失败: {e2}")
-        raise ImportError(f"无法导入Config类: config导入失败({e}), load_config导入失败({e2})")
+        print("✅ 备用方案：使用load_config模块导入Config")
 from models.models import init_db
 from utils.logger import setup_logger
 from utils.auth import init_auth
