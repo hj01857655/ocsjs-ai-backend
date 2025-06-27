@@ -47,10 +47,16 @@ def main():
         print(f"   MYSQLPORT: {mysql_port}")
         print(f"   MYSQL_DATABASE: {mysql_database}")
 
-        # 构建连接字符串
-        mysql_url = f"mysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_database}"
+        # 如果单独变量也没有，使用已知的Railway MySQL连接
+        if not mysql_host or mysql_host == 'mysql.railway.internal':
+            print("🔧 使用已知的Railway MySQL连接信息...")
+            mysql_url = "mysql://root:oypxmJcTSksIvFwuiIbspwNFRLNHVaAs@mysql.railway.internal:3306/railway"
+        else:
+            # 构建连接字符串
+            mysql_url = f"mysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_database}"
+
         os.environ['MYSQL_URL'] = mysql_url
-        print(f"✅ 已构建MYSQL_URL: {mysql_url[:50]}...")
+        print(f"✅ 已设置MYSQL_URL: {mysql_url[:50]}...")
     
     try:
         # 导入配置
