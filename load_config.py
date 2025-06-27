@@ -87,18 +87,29 @@ class Config:
     # 数据库配置 - 支持环境变量
     # 优先使用环境变量，然后是配置文件，最后是默认值
     if os.environ.get('DATABASE_URL'):
-        # 如果有DATABASE_URL环境变量，直接使用
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+        # 如果有DATABASE_URL环境变量，处理并使用
+        database_url = os.environ.get('DATABASE_URL')
+
         # 从DATABASE_URL解析数据库信息
         import urllib.parse as urlparse
-        url = urlparse.urlparse(SQLALCHEMY_DATABASE_URI)
+        url = urlparse.urlparse(database_url)
         scheme = url.scheme or 'mysql'
         DB_TYPE = scheme.split('+')[0] if '+' in scheme else scheme
         DB_HOST = url.hostname
         DB_PORT = url.port or 3306
         DB_USER = url.username
         DB_PASSWORD = url.password
-        DB_NAME = url.path[1:] if url.path else "ocs_qa"
+        DB_NAME = url.path[1:] if url.path else "railway"
+
+        # 构建SQLAlchemy兼容的连接字符串，确保使用PyMySQL驱动
+        SQLALCHEMY_DATABASE_URI = (
+            f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            f"?charset=utf8mb4"
+            f"&autocommit=true"
+            f"&connect_timeout=10"
+            f"&read_timeout=30"
+            f"&write_timeout=30"
+        )
     else:
         # 使用配置文件或环境变量
         DB_TYPE = os.environ.get('DB_TYPE', _config.get('database', {}).get('type', "mysql"))

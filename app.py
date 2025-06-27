@@ -160,26 +160,14 @@ def create_app():
     # 设置日志
     setup_logger(app)
 
-    # 初始化数据库（容错处理）
-    try:
-        init_db(app)
-        app.config['DATABASE_AVAILABLE'] = True
-        app.logger.info("数据库初始化成功")
+    # 初始化数据库
+    init_db(app)
 
-        # 初始化数据库监控
-        with app.app_context():
-            from models.models import db
-            db_monitor = init_db_monitor(db)
-            app.logger.info("数据库连接池监控器已启动")
-
-    except Exception as e:
-        app.config['DATABASE_AVAILABLE'] = False
-        app.logger.warning(f"数据库连接失败，将在无数据库模式下运行: {str(e)}")
-        app.logger.info("应用将在无数据库模式下启动，部分功能将被禁用")
-
-        # 在Railway环境中，这是正常的，因为还没有添加数据库服务
-        if is_container_environment():
-            app.logger.info("检测到容器环境，请在Railway控制台添加MySQL数据库服务")
+    # 初始化数据库监控
+    with app.app_context():
+        from models.models import db
+        db_monitor = init_db_monitor(db)
+        app.logger.info("数据库连接池监控器已启动")
 
     # 初始化系统监控
     system_monitor = init_system_monitor()
