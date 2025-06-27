@@ -12,10 +12,11 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 # 添加项目根目录到Python路径
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, project_root)
 
 # 导入配置和服务
-from config.config import Config
+from config import Config
 from models.models import init_db
 from utils.logger import setup_logger
 from utils.auth import init_auth
