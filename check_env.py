@@ -8,7 +8,7 @@ print("🔍 Railway环境变量检查")
 print("=" * 50)
 
 # 检查关键环境变量
-key_vars = ['PORT', 'MYSQL_URL', 'DATABASE_URL', 'RAILWAY_ENVIRONMENT']
+key_vars = ['PORT', 'MYSQL_URL', 'RAILWAY_ENVIRONMENT']
 
 for var in key_vars:
     value = os.environ.get(var)
