@@ -16,11 +16,22 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 # 导入配置和服务
-# 在Railway环境中直接使用load_config避免循环导入问题
-if os.environ.get('RAILWAY_ENVIRONMENT') or '/app/' in os.path.abspath(__file__):
-    # Railway环境或容器环境，直接使用load_config
+# 检测是否在容器/云环境中运行
+def is_container_environment():
+    """检测是否在容器或云环境中运行"""
+    indicators = [
+        os.environ.get('RAILWAY_ENVIRONMENT'),  # Railway环境变量
+        os.environ.get('PORT'),  # 云平台通常设置PORT环境变量
+        os.path.exists('/.dockerenv'),  # Docker容器标识文件
+        os.environ.get('CONTAINER'),  # 通用容器环境变量
+        os.environ.get('KUBERNETES_SERVICE_HOST'),  # Kubernetes环境
+    ]
+    return any(indicators)
+
+if is_container_environment():
+    # 容器/云环境，直接使用load_config避免循环导入
     from load_config import Config
-    print("✅ Railway环境：使用load_config模块导入Config")
+    print("✅ 容器环境：使用load_config模块导入Config")
 else:
     # 本地开发环境，尝试使用config模块
     try:
