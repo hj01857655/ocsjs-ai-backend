@@ -194,21 +194,28 @@ class ApiProxyPool:
 
     def __init__(self, config_file: Optional[str] = None):
         if config_file is None:
-            # 尝试多个可能的配置文件路径
+            # 获取项目根目录路径
             import os
-            possible_paths = [
-                'config.json',
-                '../config.json',
-                '../../config.json',
-                os.path.join(os.path.dirname(__file__), '../../config.json')
-            ]
+            # services/api_proxy_pool.py -> services/ -> 项目根目录
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            config_path = os.path.join(project_root, 'config.json')
 
-            for path in possible_paths:
-                if os.path.exists(path):
-                    self.config_file = path
-                    break
+            if os.path.exists(config_path):
+                self.config_file = config_path
             else:
-                self.config_file = 'config.json'  # 默认值
+                # 如果项目根目录没有找到，尝试其他路径
+                possible_paths = [
+                    'config.json',
+                    '../config.json',
+                    '../../config.json'
+                ]
+
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        self.config_file = path
+                        break
+                else:
+                    self.config_file = config_path  # 使用项目根目录路径作为默认值
         else:
             self.config_file = config_file
 
@@ -265,6 +272,11 @@ class ApiProxyPool:
         """加载配置文件"""
         try:
             logger.info(f"尝试加载配置文件: {self.config_file}")
+            logger.info(f"配置文件是否存在: {os.path.exists(self.config_file)}")
+
+            if not os.path.exists(self.config_file):
+                logger.error(f"配置文件不存在: {self.config_file}")
+                return
 
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)

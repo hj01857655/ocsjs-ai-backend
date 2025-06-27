@@ -18,6 +18,33 @@ import random
 api_proxy_management_bp = Blueprint('api_proxy_management', __name__)
 logger = get_logger(__name__)
 
+@api_proxy_management_bp.route('/test-status', methods=['GET'])
+def test_proxy_pool_status():
+    """测试代理池状态（无需认证）"""
+    try:
+        proxy_pool = get_api_proxy_pool()
+        return jsonify({
+            'success': True,
+            'data': {
+                'config_file': proxy_pool.config_file,
+                'proxy_count': len(proxy_pool.proxies),
+                'proxies': [
+                    {
+                        'name': proxy.name,
+                        'api_base': proxy.api_base,
+                        'is_active': proxy.is_active,
+                        'model_count': len(proxy.models)
+                    } for proxy in proxy_pool.proxies[:5]  # 只显示前5个
+                ]
+            }
+        })
+    except Exception as e:
+        logger.error(f"测试代理池状态异常: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'测试失败: {str(e)}'
+        }), 500
+
 def _make_proxy_request(proxy, model, messages, timeout=15, max_tokens=50):
     """统一的代理API请求方法"""
     import requests
