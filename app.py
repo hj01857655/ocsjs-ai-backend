@@ -18,9 +18,16 @@ sys.path.insert(0, project_root)
 # 导入配置和服务
 try:
     from config import Config
-except ImportError:
-    # Railway环境下的备用导入方式
-    from load_config import Config
+    print("✅ 成功从config模块导入Config")
+except ImportError as e:
+    print(f"❌ 从config模块导入失败: {e}")
+    try:
+        # Railway环境下的备用导入方式
+        from load_config import Config
+        print("✅ 成功从load_config模块导入Config")
+    except ImportError as e2:
+        print(f"❌ 从load_config模块导入也失败: {e2}")
+        raise ImportError(f"无法导入Config类: config导入失败({e}), load_config导入失败({e2})")
 from models.models import init_db
 from utils.logger import setup_logger
 from utils.auth import init_auth
