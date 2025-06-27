@@ -19,9 +19,9 @@ def test_database_connection():
         import pymysql
         
         # 解析数据库连接信息
-        database_url = os.environ.get('DATABASE_URL')
+        database_url = os.environ.get('MYSQL_URL') or os.environ.get('DATABASE_URL')
         if not database_url:
-            print("❌ 未找到DATABASE_URL环境变量")
+            print("❌ 未找到MYSQL_URL或DATABASE_URL环境变量")
             return False
             
         print(f"🔗 数据库连接字符串: {database_url}")
@@ -83,9 +83,9 @@ def main():
     print("=" * 50)
     
     # 检查环境变量
-    if not os.environ.get('DATABASE_URL'):
-        print("❌ 请先在Railway控制台设置DATABASE_URL环境变量")
-        print("   格式: mysql://user:password@host:port/database")
+    if not (os.environ.get('MYSQL_URL') or os.environ.get('DATABASE_URL')):
+        print("❌ 请先在Railway控制台设置MYSQL_URL环境变量")
+        print("   在Railway中设置: MYSQL_URL = ${{ MySQL.MYSQL_URL }}")
         return
     
     # 测试数据库连接

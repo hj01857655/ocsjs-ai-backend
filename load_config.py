@@ -86,9 +86,10 @@ class Config:
 
     # 数据库配置 - 支持环境变量
     # 优先使用环境变量，然后是配置文件，最后是默认值
-    if os.environ.get('DATABASE_URL'):
-        # 如果有DATABASE_URL环境变量，处理并使用
-        database_url = os.environ.get('DATABASE_URL')
+    # Railway通常使用MYSQL_URL，也支持DATABASE_URL
+    database_url = os.environ.get('MYSQL_URL') or os.environ.get('DATABASE_URL')
+    if database_url:
+        # 如果有MYSQL_URL或DATABASE_URL环境变量，处理并使用
 
         # 从DATABASE_URL解析数据库信息
         import urllib.parse as urlparse
