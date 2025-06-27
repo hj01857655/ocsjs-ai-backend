@@ -37,9 +37,11 @@ if is_container_environment():
 
     # 检查MYSQL_URL环境变量
     mysql_url = os.environ.get('MYSQL_URL')
-    if mysql_url:
-        print(f"✅ 检测到MYSQL_URL: {mysql_url[:50]}...")
+    database_url=os.environ.get('DATABASE_URL')
+    if mysql_url :
+        print(f"✅ 检测到MYSQL_URL: {mysql_url}...")
     else:
+        print(f"✅ 检测到DATABASE_URL: {database_url}...")
         print("⚠️ 未检测到MYSQL_URL环境变量")
         print("   请在Railway控制台设置: MYSQL_URL = ${{ MySQL.MYSQL_URL }}")
 else:
