@@ -42,8 +42,6 @@ if is_container_environment():
         print(f"✅ 检测到MYSQL_URL: {mysql_url}...")
     else:
         print(f"✅ 检测到DATABASE_URL: {database_url}...")
-        print("⚠️ 未检测到MYSQL_URL环境变量")
-        print("   请在Railway控制台设置: MYSQL_URL = ${{ MySQL.MYSQL_URL }}")
 else:
     # 本地开发环境，尝试使用config模块
     try:
