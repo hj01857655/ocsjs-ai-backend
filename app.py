@@ -370,15 +370,19 @@ def register_additional_routes(app):
 
 if __name__ == '__main__':
     import time
+    import os
 
     # 创建应用实例
     app = create_app()
+
+    # 获取端口号，优先使用环境变量
+    port = int(os.environ.get('PORT', 5000))
 
     # 开发环境配置
     if app.config.get('ENV') == 'development':
         app.run(
             host='0.0.0.0',
-            port=5000,
+            port=port,
             debug=True,
             threaded=True,
             load_dotenv=False  # 禁用自动加载.env文件
@@ -387,7 +391,7 @@ if __name__ == '__main__':
         # 生产环境使用gunicorn等WSGI服务器
         app.run(
             host='0.0.0.0',
-            port=5000,
+            port=port,
             debug=False,
             threaded=True,
             load_dotenv=False  # 禁用自动加载.env文件

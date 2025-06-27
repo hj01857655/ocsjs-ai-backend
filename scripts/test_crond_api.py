@@ -165,13 +165,16 @@ def main():
         API_KEY = os.environ.get("CROND_API_KEY", "")
         if not API_KEY and len(sys.argv) > 1:
             API_KEY = sys.argv[1]
-        
+
         if not API_KEY:
             print("错误: 请提供API密钥。可以通过以下方式设置:")
-            print("1. 直接在脚本中设置 API_KEY 变量")
-            print("2. 设置环境变量 CROND_API_KEY")
-            print("3. 作为命令行参数传递")
-            print("\n使用方法: python test_crond_api.py YOUR_API_KEY")
+            print("1. 设置环境变量 CROND_API_KEY")
+            print("2. 作为命令行参数传递")
+            print("3. 在config.json中配置")
+            print("\n使用方法:")
+            print("  方法1: set CROND_API_KEY=your_key && python test_crond_api.py")
+            print("  方法2: python test_crond_api.py your_key")
+            print("\n⚠️  警告: 请勿在代码中硬编码API密钥！")
             return
     
     # 测试 /v1/models 端点
