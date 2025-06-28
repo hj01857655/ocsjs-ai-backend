@@ -1292,5 +1292,8 @@
   },
   "record": {
     "enable": true
+  },
+  "logging": {
+    "level": "INFO"
   }
 }

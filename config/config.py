@@ -102,7 +102,26 @@ class Config:
             'tcp_proxy_port': os.environ.get('RAILWAY_TCP_PROXY_PORT', 'Unknown')
         }
         print(f"🚀 检测到 Railway 环境: {railway_info['project_name']}/{railway_info['environment']}/{railway_info['service_name']}")
-        print(f"🌐 TCP代理: {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
+
+        # 如果TCP代理变量不可用，尝试从数据库URL解析
+        if railway_info['tcp_proxy_domain'] == 'Unknown':
+            db_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
+            if db_url:
+                import urllib.parse as urlparse
+                try:
+                    url = urlparse.urlparse(db_url)
+                    if url.hostname and url.port:
+                        railway_info['tcp_proxy_domain'] = url.hostname
+                        railway_info['tcp_proxy_port'] = str(url.port)
+                        print(f"🌐 TCP代理 (从DB URL解析): {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
+                    else:
+                        print(f"🌐 TCP代理: {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
+                except:
+                    print(f"🌐 TCP代理: {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
+            else:
+                print(f"🌐 TCP代理: {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
+        else:
+            print(f"🌐 TCP代理: {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
     else:
         print(f"🏠 本地开发环境")
 

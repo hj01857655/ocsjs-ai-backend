@@ -177,10 +177,13 @@ def create_app():
     with app.app_context():
         from models.models import db
         db_monitor = init_db_monitor(db)
+        # 使用 print 确保正确的日志级别
+        print("✅ 数据库连接池监控器已启动")
         app.logger.info("数据库连接池监控器已启动")
 
     # 初始化系统监控
     system_monitor = init_system_monitor()
+    print("✅ 系统性能监控器已启动")
     app.logger.info("系统性能监控器已启动")
 
     # 初始化认证
