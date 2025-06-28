@@ -245,6 +245,59 @@ def get_pool_status(current_user):
             'user_id': current_user.id if current_user else None
         })
 
+@db_monitor_bp.route('/railway-info', methods=['GET'])
+@token_required
+def get_railway_info(current_user):
+    """获取 Railway 环境信息"""
+    try:
+        import os
+
+        # 检测是否在 Railway 环境
+        is_railway = bool(
+            os.environ.get('RAILWAY_PROJECT_ID') or
+            os.environ.get('RAILWAY_ENVIRONMENT_ID')
+        )
+
+        if is_railway:
+            railway_info = {
+                'environment': 'Railway',
+                'project_name': os.environ.get('RAILWAY_PROJECT_NAME'),
+                'project_id': os.environ.get('RAILWAY_PROJECT_ID'),
+                'environment_name': os.environ.get('RAILWAY_ENVIRONMENT_NAME'),
+                'environment_id': os.environ.get('RAILWAY_ENVIRONMENT_ID'),
+                'service_name': os.environ.get('RAILWAY_SERVICE_NAME'),
+                'service_id': os.environ.get('RAILWAY_SERVICE_ID'),
+                'tcp_proxy_domain': os.environ.get('RAILWAY_TCP_PROXY_DOMAIN'),
+                'tcp_proxy_port': os.environ.get('RAILWAY_TCP_PROXY_PORT'),
+                'private_domain': os.environ.get('RAILWAY_PRIVATE_DOMAIN'),
+                'volume_info': {
+                    'volume_id': os.environ.get('RAILWAY_VOLUME_ID'),
+                    'volume_name': os.environ.get('RAILWAY_VOLUME_NAME'),
+                    'mount_path': os.environ.get('RAILWAY_VOLUME_MOUNT_PATH')
+                },
+                'mysql_vars': {
+                    'mysql_database': os.environ.get('MYSQL_DATABASE'),
+                    'mysql_user': os.environ.get('MYSQLUSER'),
+                    'mysql_host': os.environ.get('MYSQLHOST'),
+                    'mysql_port': os.environ.get('MYSQLPORT'),
+                    'has_mysql_url': bool(os.environ.get('MYSQL_URL')),
+                    'has_database_url': bool(os.environ.get('DATABASE_URL'))
+                }
+            }
+        else:
+            railway_info = {
+                'environment': 'Local',
+                'message': '当前运行在本地环境'
+            }
+
+        return success_response(data=railway_info, message='获取环境信息成功')
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'get_railway_info',
+            'user_id': current_user.id if current_user else None
+        })
+
 # 注册错误处理器
 @db_monitor_bp.errorhandler(Exception)
 def handle_db_monitor_error(error):

@@ -83,8 +83,28 @@ class Config:
     # 记录配置
     ENABLE_RECORD = _config.get('record', {}).get('enable', True)  # 是否记录问答到数据库
 
-    # 数据库配置 - Railway 环境变量优先
+    # 数据库配置 - Railway 环境自适应
     # 检测 Railway 环境并使用相应的数据库配置
+
+    # 检测是否在 Railway 环境中
+    is_railway_env = bool(
+        os.environ.get('RAILWAY_PROJECT_ID') or
+        os.environ.get('RAILWAY_ENVIRONMENT_ID') or
+        os.environ.get('RAILWAY_SERVICE_ID')
+    )
+
+    if is_railway_env:
+        railway_info = {
+            'project_name': os.environ.get('RAILWAY_PROJECT_NAME', 'Unknown'),
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT_NAME', 'Unknown'),
+            'service_name': os.environ.get('RAILWAY_SERVICE_NAME', 'Unknown'),
+            'tcp_proxy_domain': os.environ.get('RAILWAY_TCP_PROXY_DOMAIN', 'Unknown'),
+            'tcp_proxy_port': os.environ.get('RAILWAY_TCP_PROXY_PORT', 'Unknown')
+        }
+        print(f"🚀 检测到 Railway 环境: {railway_info['project_name']}/{railway_info['environment']}/{railway_info['service_name']}")
+        print(f"🌐 TCP代理: {railway_info['tcp_proxy_domain']}:{railway_info['tcp_proxy_port']}")
+    else:
+        print(f"🏠 本地开发环境")
 
     # 方式1：使用 Railway 提供的完整连接URL（推荐）
     railway_db_url = (
@@ -135,6 +155,31 @@ class Config:
         )
 
         print(f"🚀 使用 Railway MySQL 数据库 (独立变量): {DB_HOST}:{DB_PORT}/{DB_NAME}")
+
+    # 方式3：使用 Railway 原生环境变量构建连接（备用方案）
+    elif is_railway_env and os.environ.get('RAILWAY_TCP_PROXY_DOMAIN'):
+        # 使用 Railway 原生环境变量构建 MySQL 连接
+        DB_TYPE = "mysql"
+        DB_USER = "root"  # Railway MySQL 默认用户
+        DB_PASSWORD = os.environ.get('MYSQL_ROOT_PASSWORD', '')
+        DB_HOST = os.environ.get('RAILWAY_TCP_PROXY_DOMAIN')
+        DB_PORT = int(os.environ.get('RAILWAY_TCP_PROXY_PORT', 3306))
+        DB_NAME = os.environ.get('MYSQL_DATABASE', 'railway')
+
+        # 构建连接字符串
+        SQLALCHEMY_DATABASE_URI = (
+            f"{DB_TYPE}+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            f"?charset=utf8mb4"
+            f"&autocommit=true"
+            f"&connect_timeout=10"
+            f"&read_timeout=30"
+            f"&write_timeout=30"
+            f"&max_allowed_packet=16777216"
+            f"&sql_mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
+        )
+
+        print(f"🚀 使用 Railway MySQL 数据库 (原生变量): {DB_HOST}:{DB_PORT}/{DB_NAME}")
+
     else:
         # 本地环境：使用配置文件或环境变量
         DB_TYPE = os.environ.get('DB_TYPE', _config.get('database', {}).get('type', "mysql"))
