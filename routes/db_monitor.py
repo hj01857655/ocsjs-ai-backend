@@ -3,18 +3,18 @@
 数据库监控API路由
 """
 from flask import Blueprint, jsonify, request
-from utils.auth import token_required
 from utils.db_monitor import get_db_monitor
 from utils.response_handler import success_response, error_response, handle_exception
 from utils.logger import get_logger
+from models.models import db
+from datetime import datetime
 
 logger = get_logger(__name__)
 
 db_monitor_bp = Blueprint('db_monitor', __name__, url_prefix='/api/db-monitor')
 
 @db_monitor_bp.route('/stats', methods=['GET'])
-@token_required
-def get_db_stats(current_user):
+def get_db_stats():
     """获取数据库连接池统计信息"""
     try:
         monitor = get_db_monitor()
@@ -27,12 +27,11 @@ def get_db_stats(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_db_stats',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @db_monitor_bp.route('/health', methods=['GET'])
-@token_required
-def get_db_health(current_user):
+def get_db_health():
     """获取数据库健康状态"""
     try:
         monitor = get_db_monitor()
@@ -56,12 +55,11 @@ def get_db_health(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_db_health',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @db_monitor_bp.route('/optimize', methods=['GET'])
-@token_required
-def get_optimization_recommendations(current_user):
+def get_optimization_recommendations():
     """获取数据库优化建议（基于实际数据库查询）"""
     try:
         from sqlalchemy import text
@@ -155,7 +153,6 @@ def get_optimization_recommendations(current_user):
                 "考虑定期备份重要数据",
                 "监控连接池使用情况"
             ]
-
         optimization_data = {
             'recommendations': recommendations,
             'optimization_score': max(optimization_score, 0),
@@ -169,12 +166,11 @@ def get_optimization_recommendations(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_optimization_recommendations',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @db_monitor_bp.route('/reset-stats', methods=['POST'])
-@token_required
-def reset_db_stats(current_user):
+def reset_db_stats():
     """重置数据库统计信息"""
     try:
         monitor = get_db_monitor()
@@ -183,14 +179,14 @@ def reset_db_stats(current_user):
         
         monitor.reset_stats()
         
-        logger.info(f"用户 {current_user.username} 重置了数据库统计信息")
+        logger.info("数据库统计信息已重置")
         
         return success_response(message='数据库统计信息已重置')
         
     except Exception as e:
         return handle_exception(e, context={
             'function': 'reset_db_stats',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @db_monitor_bp.route('/test-connection', methods=['POST'])
@@ -296,8 +292,7 @@ def test_db_connection():
         )
 
 @db_monitor_bp.route('/query-stats', methods=['GET'])
-@token_required
-def get_query_stats(current_user):
+def get_query_stats():
     """获取查询统计信息"""
     try:
         monitor = get_db_monitor()
@@ -328,12 +323,11 @@ def get_query_stats(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_query_stats',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @db_monitor_bp.route('/pool-status', methods=['GET'])
-@token_required
-def get_pool_status(current_user):
+def get_pool_status():
     """获取连接池状态"""
     try:
         monitor = get_db_monitor()
@@ -366,12 +360,11 @@ def get_pool_status(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_pool_status',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @db_monitor_bp.route('/railway-info', methods=['GET'])
-@token_required
-def get_railway_info(current_user):
+def get_railway_info():
     """获取 Railway 环境信息（包含数据库连接验证）"""
     try:
         import os
@@ -464,7 +457,7 @@ def get_railway_info(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_railway_info',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 # 注册错误处理器

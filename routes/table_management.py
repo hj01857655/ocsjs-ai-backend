@@ -5,7 +5,7 @@
 """
 from flask import Blueprint, request, jsonify
 from sqlalchemy import text, inspect
-from utils.auth import token_required
+# from utils.auth import token_required  # 暂时移除认证
 from utils.response_handler import success_response, error_response, handle_exception
 from utils.logger import get_logger
 from models.models import db
@@ -17,8 +17,7 @@ logger = get_logger(__name__)
 table_management_bp = Blueprint('table_management', __name__, url_prefix='/api/table-management')
 
 @table_management_bp.route('/tables', methods=['GET'])
-@token_required
-def get_tables(current_user):
+def get_tables():
     """获取所有数据表列表"""
     try:
         inspector = inspect(db.engine)
