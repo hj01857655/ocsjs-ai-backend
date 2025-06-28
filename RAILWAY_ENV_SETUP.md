@@ -140,7 +140,7 @@ API_5_PRIORITY=1
 
 ### 1. 验证数据库连接
 ```
-POST https://your-app.railway.app/api/db-monitor/test-connection
+POST https://ocsjs-ai-backend-production.up.railway.app/api/db-monitor/test-connection
 Headers: Authorization: Bearer <your-token>
 ```
 
@@ -166,19 +166,42 @@ Headers: Authorization: Bearer <your-token>
 
 ### 2. 验证API代理配置
 ```
-https://your-app.railway.app/api/api-proxy-management/test-status
+https://ocsjs-ai-backend-production.up.railway.app/api/api-proxy-management/test-status
 ```
 
-应该能看到配置的API列表和数量。
+### 3. 验证 Railway 环境信息
+```
+GET https://ocsjs-ai-backend-production.up.railway.app/api/db-monitor/railway-info
+Headers: Authorization: Bearer <your-token>
+```
 
-### 3. 检查应用日志
+预期响应：
+```json
+{
+  "success": true,
+  "data": {
+    "environment": "Railway",
+    "project_name": "zippy-tranquility",
+    "environment_name": "production",
+    "service_name": "ocsjs-ai-backend",
+    "tcp_proxy_domain": "interchange.proxy.rlwy.net",
+    "tcp_proxy_port": "49225",
+    "private_domain": "ocsjs-ai-backend.railway.internal"
+  }
+}
+```
+
+### 4. 检查应用日志
 在 Railway 控制台查看应用启动日志，应该看到：
 ```
+🚀 检测到 Railway 环境: zippy-tranquility/production/ocsjs-ai-backend
+🌐 TCP代理: interchange.proxy.rlwy.net:49225
 🚀 使用 Railway MySQL 数据库: interchange.proxy.rlwy.net:49225/railway
 ```
 
 如果看到：
 ```
+🏠 本地开发环境
 🏠 使用本地 MySQL 数据库: localhost:3306/ocs_qa
 ```
 说明环境变量配置有问题。
@@ -197,7 +220,21 @@ DATABASE_URL=mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlw
 MYSQL_URL=mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway
 ```
 
-### 🔧 Railway MySQL 服务自动提供的环境变量
+### 🔧 Railway 服务环境变量（实际值）
+
+#### 后端服务环境变量
+```
+RAILWAY_PUBLIC_DOMAIN=ocsjs-ai-backend-production.up.railway.app
+RAILWAY_PRIVATE_DOMAIN=ocsjs-ai-backend.railway.internal
+RAILWAY_PROJECT_NAME=zippy-tranquility
+RAILWAY_ENVIRONMENT_NAME=production
+RAILWAY_SERVICE_NAME=ocsjs-ai-backend
+RAILWAY_PROJECT_ID=4d15f168-84f5-4b37-a719-1f4dacd21bb9
+RAILWAY_ENVIRONMENT_ID=896994d1-50a7-45f9-91d7-5d2ed7376fa9
+RAILWAY_SERVICE_ID=ad11b11d-8ca0-4287-bcdc-05ac08178718
+```
+
+#### MySQL 服务环境变量
 ```
 MYSQL_DATABASE=railway
 MYSQLUSER=root
