@@ -1,7 +1,7 @@
 # OCSJS AI Backend .gitignore
 
 # 配置文件 - 包含敏感信息，不应提交到版本控制
-config.json
+# config.json  # 临时允许提交以解决 Railway 部署问题
 config/config.py
 config/local_config.py
 .env

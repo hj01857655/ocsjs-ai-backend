@@ -275,12 +275,8 @@ class ApiProxyPool:
             logger.info(f"配置文件是否存在: {os.path.exists(self.config_file)}")
 
             if not os.path.exists(self.config_file):
-                logger.warning(f"配置文件不存在: {self.config_file}")
-                # 尝试创建默认配置文件
-                self._create_default_config()
-                if not os.path.exists(self.config_file):
-                    logger.error(f"无法创建配置文件: {self.config_file}")
-                    return
+                logger.error(f"配置文件不存在: {self.config_file}")
+                return
 
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
