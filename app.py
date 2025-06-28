@@ -62,7 +62,7 @@ from utils.system_monitor import init_system_monitor
 from routes.auth import auth_bp
 from routes.questions import questions_bp
 from routes.db_monitor import db_monitor_bp
-from routes.table_management import table_management_bp
+# from routes.table_management import table_management_bp  # 已删除
 from routes.proxy_management import proxy_management_bp
 
 # 已删除的非核心模块：
@@ -230,7 +230,7 @@ def register_blueprints(app):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')                    # 认证 - 必需
     app.register_blueprint(questions_bp, url_prefix='/api/questions')         # 问答 - 核心功能
     app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')       # 数据库监控 - 必需
-    app.register_blueprint(table_management_bp, url_prefix='/api/table-management')  # 表管理 - 必需
+    # app.register_blueprint(table_management_bp, url_prefix='/api/table-management')  # 表管理 - 已删除
     app.register_blueprint(proxy_management_bp, url_prefix='/api/api-proxy-management')  # 代理管理 - 恢复
 
     # 以下模块已删除（非核心功能）：
@@ -252,7 +252,7 @@ def register_blueprints(app):
             'version': '1.0.0',
             'description': '精简的智能问答系统 API - 只包含核心功能',
             'base_url': request.host_url.rstrip('/'),
-            'total_endpoints': 41,  # 恢复代理管理后的接口数
+            'total_endpoints': 26,  # 删除表管理后的接口数
             'categories': [
                 {
                     'name': '认证授权',
@@ -268,11 +268,6 @@ def register_blueprints(app):
                     'name': '数据库监控',
                     'description': '数据库连接、统计、健康检查等监控功能',
                     'endpoint_count': 8
-                },
-                {
-                    'name': '表管理',
-                    'description': '数据表的查看、管理、查询、维护等功能',
-                    'endpoint_count': 15
                 },
                 {
                     'name': '代理管理',
