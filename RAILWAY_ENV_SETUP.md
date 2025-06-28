@@ -6,24 +6,28 @@
 
 ## 数据库配置（必需）
 
-系统支持多种 Railway MySQL 连接方式，按优先级排序：
+系统支持两种数据库连接方式：
 
-### 方式1：使用完整连接URL（推荐）
-Railway 自动提供以下环境变量，系统会自动检测并使用：
+### 方式1：Railway 完整连接URL（推荐）
+Railway 自动提供完整的数据库连接URL，系统会优先使用：
 ```
-DATABASE_URL=mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}
-MYSQL_URL=mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}
-MYSQL_PUBLIC_URL=mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}
+DATABASE_URL=mysql://root:***@interchange.proxy.rlwy.net:49225/railway
+MYSQL_URL=mysql://root:***@interchange.proxy.rlwy.net:49225/railway
 ```
 
-### 方式2：使用独立环境变量
-如果没有完整URL，系统会使用以下独立变量：
-```
-MYSQLUSER=root
-MYSQL_ROOT_PASSWORD=kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk
-MYSQLHOST=${{RAILWAY_PRIVATE_DOMAIN}}
-MYSQLPORT=3306
-MYSQL_DATABASE=railway
+### 方式2：本地配置文件
+本地开发时使用 config.json 中的配置：
+```json
+{
+  "database": {
+    "type": "mysql",
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "name": "ocs_qa"
+  }
+}
 ```
 
 ### Railway 提供的完整环境变量列表

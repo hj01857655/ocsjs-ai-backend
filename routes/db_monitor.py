@@ -120,33 +120,86 @@ def reset_db_stats(current_user):
 def test_db_connection(current_user):
     """测试数据库连接"""
     try:
-        from config.config import SQLALCHEMY_DATABASE_URI, DB_HOST, DB_PORT, DB_NAME, DB_USER
-        from sqlalchemy import create_engine, text
         import time
+        from sqlalchemy import create_engine, text
 
-        # 获取数据库配置信息
-        db_info = {
-            'host': DB_HOST,
-            'port': DB_PORT,
-            'database': DB_NAME,
-            'user': DB_USER,
-            'connection_string': SQLALCHEMY_DATABASE_URI.split('@')[1] if '@' in SQLALCHEMY_DATABASE_URI else 'Railway DB'
-        }
+        # 安全地导入配置变量
+        try:
+            from config.config import SQLALCHEMY_DATABASE_URI
+            logger.info(f"成功导入数据库配置")
+        except ImportError as e:
+            logger.error(f"导入配置失败: {str(e)}")
+            return error_response(f'配置导入失败: {str(e)}', status_code=500)
+
+        # 尝试导入其他配置变量（可能不存在）
+        try:
+            from config.config import DB_HOST, DB_PORT, DB_NAME, DB_USER
+            db_info = {
+                'host': DB_HOST,
+                'port': DB_PORT,
+                'database': DB_NAME,
+                'user': DB_USER,
+                'connection_string': SQLALCHEMY_DATABASE_URI.split('@')[1] if '@' in SQLALCHEMY_DATABASE_URI else 'Unknown'
+            }
+        except (ImportError, NameError) as e:
+            logger.warning(f"部分配置变量不可用: {str(e)}")
+            # 从连接字符串解析信息
+            if SQLALCHEMY_DATABASE_URI:
+                import urllib.parse as urlparse
+                try:
+                    url = urlparse.urlparse(SQLALCHEMY_DATABASE_URI)
+                    db_info = {
+                        'host': url.hostname or 'Unknown',
+                        'port': url.port or 'Unknown',
+                        'database': url.path[1:] if url.path else 'Unknown',
+                        'user': url.username or 'Unknown',
+                        'connection_string': SQLALCHEMY_DATABASE_URI.split('@')[1] if '@' in SQLALCHEMY_DATABASE_URI else 'Unknown'
+                    }
+                except Exception as parse_error:
+                    logger.error(f"解析连接字符串失败: {str(parse_error)}")
+                    db_info = {
+                        'host': 'Unknown',
+                        'port': 'Unknown',
+                        'database': 'Unknown',
+                        'user': 'Unknown',
+                        'connection_string': 'Parse Error'
+                    }
+            else:
+                return error_response('数据库连接字符串未配置', status_code=500)
+
+        logger.info(f"开始测试数据库连接: {db_info['host']}:{db_info['port']}")
 
         # 测试连接
         start_time = time.time()
-        engine = create_engine(SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
 
-        with engine.connect() as conn:
-            # 执行简单查询测试
-            result = conn.execute(text("SELECT 1 as test"))
-            test_result = result.fetchone()
+        try:
+            engine = create_engine(SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
 
-            # 获取数据库版本
-            version_result = conn.execute(text("SELECT VERSION() as version"))
-            db_version = version_result.fetchone()[0]
+            with engine.connect() as conn:
+                # 执行简单查询测试
+                result = conn.execute(text("SELECT 1 as test"))
+                test_result = result.fetchone()
 
-        connection_time = time.time() - start_time
+                # 获取数据库版本
+                version_result = conn.execute(text("SELECT VERSION() as version"))
+                db_version = version_result.fetchone()[0]
+
+            connection_time = time.time() - start_time
+            logger.info(f"数据库连接测试成功，耗时: {connection_time:.3f}秒")
+
+        except Exception as db_error:
+            connection_time = time.time() - start_time
+            logger.error(f"数据库连接失败: {str(db_error)}")
+            return error_response(
+                f'数据库连接失败: {str(db_error)}',
+                status_code=500,
+                data={
+                    'database_info': db_info,
+                    'connection_time': round(connection_time * 1000, 2),
+                    'error_details': str(db_error),
+                    'connection_status': 'failed'
+                }
+            )
 
         # 测试监控器
         monitor = get_db_monitor()
@@ -165,11 +218,18 @@ def test_db_connection(current_user):
         )
 
     except Exception as e:
-        return handle_exception(e, context={
-            'function': 'test_db_connection',
-            'user_id': current_user.id if current_user else None,
-            'error_details': str(e)
-        })
+        logger.error(f"数据库连接测试异常: {str(e)}")
+        import traceback
+        logger.error(f"详细错误信息: {traceback.format_exc()}")
+
+        return error_response(
+            f'数据库连接测试失败: {str(e)}',
+            status_code=500,
+            data={
+                'error_details': str(e),
+                'connection_status': 'error'
+            }
+        )
 
 @db_monitor_bp.route('/query-stats', methods=['GET'])
 @token_required
