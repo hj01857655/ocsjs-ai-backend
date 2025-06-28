@@ -120,19 +120,55 @@ def reset_db_stats(current_user):
 def test_db_connection(current_user):
     """测试数据库连接"""
     try:
+        from config.config import SQLALCHEMY_DATABASE_URI, DB_HOST, DB_PORT, DB_NAME, DB_USER
+        from sqlalchemy import create_engine, text
+        import time
+
+        # 获取数据库配置信息
+        db_info = {
+            'host': DB_HOST,
+            'port': DB_PORT,
+            'database': DB_NAME,
+            'user': DB_USER,
+            'connection_string': SQLALCHEMY_DATABASE_URI.split('@')[1] if '@' in SQLALCHEMY_DATABASE_URI else 'Railway DB'
+        }
+
+        # 测试连接
+        start_time = time.time()
+        engine = create_engine(SQLALCHEMY_DATABASE_URI, pool_pre_ping=True)
+
+        with engine.connect() as conn:
+            # 执行简单查询测试
+            result = conn.execute(text("SELECT 1 as test"))
+            test_result = result.fetchone()
+
+            # 获取数据库版本
+            version_result = conn.execute(text("SELECT VERSION() as version"))
+            db_version = version_result.fetchone()[0]
+
+        connection_time = time.time() - start_time
+
+        # 测试监控器
         monitor = get_db_monitor()
-        if not monitor:
-            return error_response('数据库监控器未初始化', status_code=503)
-        
-        # 执行连接测试
-        monitor._test_connection()
-        
-        return success_response(message='数据库连接测试成功')
-        
+        monitor_status = "已初始化" if monitor else "未初始化"
+
+        return success_response(
+            data={
+                'database_info': db_info,
+                'connection_time': round(connection_time * 1000, 2),  # 毫秒
+                'database_version': db_version,
+                'test_query_result': test_result[0] if test_result else None,
+                'monitor_status': monitor_status,
+                'connection_status': 'success'
+            },
+            message='数据库连接测试成功'
+        )
+
     except Exception as e:
         return handle_exception(e, context={
             'function': 'test_db_connection',
-            'user_id': current_user.id if current_user else None
+            'user_id': current_user.id if current_user else None,
+            'error_details': str(e)
         })
 
 @db_monitor_bp.route('/query-stats', methods=['GET'])

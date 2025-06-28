@@ -83,29 +83,68 @@ class Config:
     # 记录配置
     ENABLE_RECORD = _config.get('record', {}).get('enable', True)  # 是否记录问答到数据库
 
-    # 数据库配置 - 支持环境变量
-    # 优先使用环境变量，然后是配置文件，最后是默认值
-    if os.environ.get('DATABASE_URL'):
-        # 如果有DATABASE_URL环境变量，直接使用
-        SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
-        # 从DATABASE_URL解析数据库信息
+    # 数据库配置 - Railway 环境变量优先
+    # 检测 Railway 环境并使用相应的数据库配置
+
+    # 方式1：使用 Railway 提供的完整连接URL（推荐）
+    railway_db_url = (
+        os.environ.get('DATABASE_URL') or
+        os.environ.get('MYSQL_URL') or
+        os.environ.get('MYSQL_PUBLIC_URL')
+    )
+
+    if railway_db_url:
+        # Railway 环境：使用完整的数据库连接URL
+        SQLALCHEMY_DATABASE_URI = railway_db_url
+
+        # 从URL解析数据库信息用于显示
         import urllib.parse as urlparse
         url = urlparse.urlparse(SQLALCHEMY_DATABASE_URI)
         scheme = str(url.scheme or 'mysql')
         DB_TYPE = scheme.split('+')[0] if '+' in scheme else scheme
-        DB_HOST = url.hostname
+        DB_HOST = url.hostname or 'Railway'
         DB_PORT = url.port or 3306
-        DB_USER = url.username
-        DB_PASSWORD = url.password
-        DB_NAME = url.path[1:] if url.path else "ocs_qa"
+        DB_USER = url.username or 'root'
+        DB_PASSWORD = url.password or '***'
+        DB_NAME = url.path[1:] if url.path else "railway"
+
+        print(f"🚀 使用 Railway MySQL 数据库: {DB_HOST}:{DB_PORT}/{DB_NAME}")
+
+    # 方式2：使用 Railway 独立环境变量构建连接
+    elif (os.environ.get('MYSQLUSER') and os.environ.get('MYSQL_ROOT_PASSWORD') and
+          os.environ.get('MYSQLHOST') and os.environ.get('MYSQL_DATABASE')):
+
+        # Railway 环境：使用独立的环境变量
+        DB_TYPE = "mysql"
+        DB_USER = os.environ.get('MYSQLUSER')
+        DB_PASSWORD = os.environ.get('MYSQL_ROOT_PASSWORD')
+        DB_HOST = os.environ.get('MYSQLHOST')
+        DB_PORT = int(os.environ.get('MYSQLPORT', 3306))
+        DB_NAME = os.environ.get('MYSQL_DATABASE')
+
+        # 构建连接字符串
+        SQLALCHEMY_DATABASE_URI = (
+            f"{DB_TYPE}+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+            f"?charset=utf8mb4"
+            f"&autocommit=true"
+            f"&connect_timeout=10"
+            f"&read_timeout=30"
+            f"&write_timeout=30"
+            f"&max_allowed_packet=16777216"
+            f"&sql_mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
+        )
+
+        print(f"🚀 使用 Railway MySQL 数据库 (独立变量): {DB_HOST}:{DB_PORT}/{DB_NAME}")
     else:
-        # 使用配置文件或环境变量
+        # 本地环境：使用配置文件或环境变量
         DB_TYPE = os.environ.get('DB_TYPE', _config.get('database', {}).get('type', "mysql"))
         DB_HOST = os.environ.get('DB_HOST', _config.get('database', {}).get('host', "localhost"))
         DB_PORT = int(os.environ.get('DB_PORT', _config.get('database', {}).get('port', 3306)))
         DB_USER = os.environ.get('DB_USER', _config.get('database', {}).get('user', "root"))
         DB_PASSWORD = os.environ.get('DB_PASSWORD', _config.get('database', {}).get('password', "123456"))
         DB_NAME = os.environ.get('DB_NAME', _config.get('database', {}).get('name', "ocs_qa"))
+
+        print(f"🏠 使用本地 MySQL 数据库: {DB_HOST}:{DB_PORT}/{DB_NAME}")
 
         # 数据库连接字符串 - 优化版本
         SQLALCHEMY_DATABASE_URI = (

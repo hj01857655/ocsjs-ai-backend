@@ -1,8 +1,59 @@
 # Railway 环境变量配置指南
 
-由于 `config.json` 文件包含敏感信息不会提交到 GitHub，需要在 Railway 中配置环境变量来创建配置文件。
+系统支持环境自适应数据库配置：
+- **本地开发**：使用 `config.json` 中的本地 MySQL 配置
+- **Railway 部署**：使用环境变量中的 Railway MySQL 服务
 
-## 必需的环境变量
+## 数据库配置（必需）
+
+系统支持多种 Railway MySQL 连接方式，按优先级排序：
+
+### 方式1：使用完整连接URL（推荐）
+Railway 自动提供以下环境变量，系统会自动检测并使用：
+```
+DATABASE_URL=mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}
+MYSQL_URL=mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}
+MYSQL_PUBLIC_URL=mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}
+```
+
+### 方式2：使用独立环境变量
+如果没有完整URL，系统会使用以下独立变量：
+```
+MYSQLUSER=root
+MYSQL_ROOT_PASSWORD=kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk
+MYSQLHOST=${{RAILWAY_PRIVATE_DOMAIN}}
+MYSQLPORT=3306
+MYSQL_DATABASE=railway
+```
+
+### Railway 提供的完整环境变量列表
+```
+# 数据库基本信息
+MYSQL_DATABASE="railway"
+MYSQLDATABASE="${{MYSQL_DATABASE}}"
+MYSQLUSER="root"
+MYSQL_ROOT_PASSWORD="kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk"
+MYSQLPASSWORD="${{MYSQL_ROOT_PASSWORD}}"
+MYSQLHOST="${{RAILWAY_PRIVATE_DOMAIN}}"
+MYSQLPORT="3306"
+
+# Railway 网络配置
+RAILWAY_TCP_PROXY_DOMAIN="interchange.proxy.rlwy.net"
+RAILWAY_TCP_PROXY_PORT="49225"
+
+# 完整连接URL（系统会自动使用这些）
+MYSQL_PUBLIC_URL="mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway"
+MYSQL_URL="mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway"
+DATABASE_URL="mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway"
+```
+
+### 实际连接URL
+基于您提供的完整信息，Railway MySQL 的连接URL是：
+```
+mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway
+```
+
+## API 配置（必需）
 
 ### 基础配置
 ```
@@ -87,9 +138,63 @@ API_5_PRIORITY=1
 
 ## 验证配置
 
-部署完成后，访问以下接口验证配置是否正确：
+### 1. 验证数据库连接
+```
+POST https://your-app.railway.app/api/db-monitor/test-connection
+Headers: Authorization: Bearer <your-token>
+```
+
+成功响应示例：
+```json
+{
+  "success": true,
+  "data": {
+    "database_info": {
+      "host": "interchange.proxy.rlwy.net",
+      "port": 49225,
+      "database": "railway",
+      "user": "root",
+      "connection_string": "interchange.proxy.rlwy.net:49225/railway"
+    },
+    "connection_time": 45.67,
+    "database_version": "8.0.35",
+    "connection_status": "success"
+  },
+  "message": "数据库连接测试成功"
+}
+```
+
+### 2. 验证API代理配置
 ```
 https://your-app.railway.app/api/api-proxy-management/test-status
 ```
 
 应该能看到配置的API列表和数量。
+
+### 3. 检查应用日志
+在 Railway 控制台查看应用启动日志，应该看到：
+```
+🚀 使用 Railway MySQL 数据库: interchange.proxy.rlwy.net:49225/railway
+```
+
+如果看到：
+```
+🏠 使用本地 MySQL 数据库: localhost:3306/ocs_qa
+```
+说明环境变量配置有问题。
+
+## 📋 完整的 Railway 环境变量配置清单
+
+在 Railway 项目设置中，确保以下环境变量已正确配置：
+
+### 数据库环境变量（Railway 自动提供）
+```
+MYSQL_DATABASE=railway
+MYSQLUSER=root
+MYSQL_ROOT_PASSWORD=kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk
+MYSQLHOST=${{RAILWAY_PRIVATE_DOMAIN}}
+MYSQLPORT=3306
+RAILWAY_TCP_PROXY_DOMAIN=interchange.proxy.rlwy.net
+RAILWAY_TCP_PROXY_PORT=49225
+DATABASE_URL=mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway
+```
