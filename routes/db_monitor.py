@@ -62,32 +62,110 @@ def get_db_health(current_user):
 @db_monitor_bp.route('/optimize', methods=['GET'])
 @token_required
 def get_optimization_recommendations(current_user):
-    """获取数据库优化建议"""
+    """获取数据库优化建议（基于实际数据库查询）"""
     try:
-        monitor = get_db_monitor()
-        if not monitor:
-            return error_response('数据库监控器未初始化', status_code=503)
-        
-        recommendations = monitor.optimize_pool()
-        stats = monitor.get_stats()
-        
+        from sqlalchemy import text
+
+        recommendations = []
+        optimization_score = 100
+        database_analysis = {}
+
+        with db.engine.connect() as conn:
+            # 1. 检查表状态和大小
+            tables_query = text("""
+                SELECT
+                    table_name,
+                    table_rows,
+                    data_length,
+                    index_length,
+                    (data_length + index_length) as total_size,
+                    data_free
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                ORDER BY (data_length + index_length) DESC
+                LIMIT 10
+            """)
+
+            tables_result = conn.execute(tables_query)
+            large_tables = []
+            total_fragmentation = 0
+
+            for row in tables_result.fetchall():
+                table_info = {
+                    'name': row[0],
+                    'rows': row[1] or 0,
+                    'data_size': row[2] or 0,
+                    'index_size': row[3] or 0,
+                    'total_size': row[4] or 0,
+                    'fragmentation': row[5] or 0
+                }
+                large_tables.append(table_info)
+                total_fragmentation += table_info['fragmentation']
+
+                # 检查大表
+                if table_info['total_size'] > 100 * 1024 * 1024:  # 100MB
+                    recommendations.append(f"表 {table_info['name']} 较大({table_info['total_size']//1024//1024}MB)，建议考虑分区或归档")
+                    optimization_score -= 5
+
+                # 检查碎片
+                if table_info['fragmentation'] > 10 * 1024 * 1024:  # 10MB
+                    recommendations.append(f"表 {table_info['name']} 存在碎片({table_info['fragmentation']//1024//1024}MB)，建议执行 OPTIMIZE TABLE")
+                    optimization_score -= 3
+
+            # 2. 检查数据库配置
+            variables_query = text("""
+                SHOW VARIABLES WHERE Variable_name IN (
+                    'innodb_buffer_pool_size',
+                    'query_cache_size',
+                    'max_connections',
+                    'innodb_log_file_size',
+                    'key_buffer_size'
+                )
+            """)
+
+            variables_result = conn.execute(variables_query)
+            db_config = {}
+
+            for row in variables_result.fetchall():
+                db_config[row[0]] = row[1]
+
+            # 分析配置
+            if 'innodb_buffer_pool_size' in db_config:
+                buffer_pool_size = int(db_config['innodb_buffer_pool_size'])
+                if buffer_pool_size < 128 * 1024 * 1024:  # 128MB
+                    recommendations.append("InnoDB缓冲池大小较小，建议增加 innodb_buffer_pool_size")
+                    optimization_score -= 10
+
+            if 'max_connections' in db_config:
+                max_conn = int(db_config['max_connections'])
+                if max_conn > 1000:
+                    recommendations.append("最大连接数设置过高，可能消耗过多内存")
+                    optimization_score -= 5
+
+            database_analysis = {
+                'large_tables': large_tables[:5],  # 只返回前5个大表
+                'total_fragmentation_mb': total_fragmentation // 1024 // 1024,
+                'database_config': db_config
+            }
+
+        # 如果没有发现问题，给出一般性建议
+        if not recommendations:
+            recommendations = [
+                "数据库状态良好，建议定期监控性能指标",
+                "考虑定期备份重要数据",
+                "监控连接池使用情况"
+            ]
+
         optimization_data = {
             'recommendations': recommendations,
-            'current_config': {
-                'pool_size': stats['pool_stats']['pool_size'],
-                'active_connections': stats['pool_stats']['active_connections'],
-                'overflow_connections': stats['pool_stats']['overflow_connections']
-            },
-            'performance_metrics': {
-                'total_queries': stats['query_stats']['total_queries'],
-                'slow_queries': stats['query_stats']['slow_queries'],
-                'failed_queries': stats['query_stats']['failed_queries'],
-                'avg_query_time': stats['query_stats']['avg_query_time']
-            }
+            'optimization_score': max(optimization_score, 0),
+            'database_analysis': database_analysis,
+            'last_analyzed': datetime.now().isoformat(),
+            'total_recommendations': len(recommendations)
         }
-        
-        return success_response(data=optimization_data, message='获取优化建议成功')
-        
+
+        return success_response(data=optimization_data, message='获取数据库优化建议成功')
+
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_optimization_recommendations',
@@ -294,15 +372,57 @@ def get_pool_status(current_user):
 @db_monitor_bp.route('/railway-info', methods=['GET'])
 @token_required
 def get_railway_info(current_user):
-    """获取 Railway 环境信息"""
+    """获取 Railway 环境信息（包含数据库连接验证）"""
     try:
         import os
+        from sqlalchemy import text
 
         # 检测是否在 Railway 环境
         is_railway = bool(
             os.environ.get('RAILWAY_PROJECT_ID') or
             os.environ.get('RAILWAY_ENVIRONMENT_ID')
         )
+
+        # 查询数据库获取实际连接信息
+        database_info = {}
+        try:
+            with db.engine.connect() as conn:
+                # 获取数据库连接信息
+                connection_info = text("""
+                    SELECT
+                        USER() as current_user,
+                        DATABASE() as current_database,
+                        CONNECTION_ID() as connection_id,
+                        VERSION() as version
+                """)
+
+                result = conn.execute(connection_info)
+                row = result.fetchone()
+
+                if row:
+                    database_info = {
+                        'connected_user': row[0],
+                        'current_database': row[1],
+                        'connection_id': row[2],
+                        'mysql_version': row[3],
+                        'connection_status': 'connected'
+                    }
+
+                # 获取当前连接的主机信息
+                host_info = text("SHOW VARIABLES WHERE Variable_name IN ('hostname', 'port')")
+                host_result = conn.execute(host_info)
+
+                for row in host_result.fetchall():
+                    if row[0] == 'hostname':
+                        database_info['server_hostname'] = row[1]
+                    elif row[0] == 'port':
+                        database_info['server_port'] = row[1]
+
+        except Exception as db_error:
+            database_info = {
+                'connection_status': 'failed',
+                'error': str(db_error)
+            }
 
         if is_railway:
             railway_info = {
@@ -316,6 +436,7 @@ def get_railway_info(current_user):
                 'tcp_proxy_domain': os.environ.get('RAILWAY_TCP_PROXY_DOMAIN'),
                 'tcp_proxy_port': os.environ.get('RAILWAY_TCP_PROXY_PORT'),
                 'private_domain': os.environ.get('RAILWAY_PRIVATE_DOMAIN'),
+                'public_domain': os.environ.get('RAILWAY_PUBLIC_DOMAIN'),
                 'volume_info': {
                     'volume_id': os.environ.get('RAILWAY_VOLUME_ID'),
                     'volume_name': os.environ.get('RAILWAY_VOLUME_NAME'),
@@ -328,12 +449,14 @@ def get_railway_info(current_user):
                     'mysql_port': os.environ.get('MYSQLPORT'),
                     'has_mysql_url': bool(os.environ.get('MYSQL_URL')),
                     'has_database_url': bool(os.environ.get('DATABASE_URL'))
-                }
+                },
+                'database_connection': database_info
             }
         else:
             railway_info = {
                 'environment': 'Local',
-                'message': '当前运行在本地环境'
+                'message': '当前运行在本地环境',
+                'database_connection': database_info
             }
 
         return success_response(data=railway_info, message='获取环境信息成功')
