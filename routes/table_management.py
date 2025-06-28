@@ -473,6 +473,455 @@ def analyze_table(current_user, table_name):
             'user_id': current_user.id if current_user else None
         })
 
+@table_management_bp.route('/tables/<table_name>/columns', methods=['GET'])
+@token_required
+def get_table_columns(current_user, table_name):
+    """获取表的列信息"""
+    try:
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        # 获取列信息
+        columns = inspector.get_columns(table_name)
+        primary_keys = inspector.get_pk_constraint(table_name)
+
+        # 格式化列信息
+        formatted_columns = []
+        for col in columns:
+            formatted_columns.append({
+                'name': col['name'],
+                'type': str(col['type']),
+                'nullable': col['nullable'],
+                'default': str(col['default']) if col['default'] is not None else None,
+                'autoincrement': col.get('autoincrement', False),
+                'primary_key': col['name'] in primary_keys.get('constrained_columns', []),
+                'comment': col.get('comment', '')
+            })
+
+        return success_response(
+            data={
+                'table_name': table_name,
+                'columns': formatted_columns,
+                'total_columns': len(formatted_columns)
+            },
+            message=f'获取表 {table_name} 列信息成功'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'get_table_columns',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/tables/<table_name>/indexes', methods=['GET'])
+@token_required
+def get_table_indexes(current_user, table_name):
+    """获取表的索引信息"""
+    try:
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        # 获取索引信息
+        indexes = inspector.get_indexes(table_name)
+        primary_key = inspector.get_pk_constraint(table_name)
+
+        # 格式化索引信息
+        formatted_indexes = []
+
+        # 添加主键信息
+        if primary_key and primary_key.get('constrained_columns'):
+            formatted_indexes.append({
+                'name': primary_key.get('name', 'PRIMARY'),
+                'type': 'PRIMARY KEY',
+                'columns': primary_key['constrained_columns'],
+                'unique': True,
+                'comment': '主键索引'
+            })
+
+        # 添加其他索引
+        for idx in indexes:
+            formatted_indexes.append({
+                'name': idx['name'],
+                'type': 'UNIQUE' if idx['unique'] else 'INDEX',
+                'columns': idx['column_names'],
+                'unique': idx['unique'],
+                'comment': '唯一索引' if idx['unique'] else '普通索引'
+            })
+
+        return success_response(
+            data={
+                'table_name': table_name,
+                'indexes': formatted_indexes,
+                'total_indexes': len(formatted_indexes)
+            },
+            message=f'获取表 {table_name} 索引信息成功'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'get_table_indexes',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/execute-sql', methods=['POST'])
+@token_required
+def execute_sql(current_user):
+    """执行SQL语句（兼容旧接口名称）"""
+    try:
+        data = request.get_json()
+        if not data or 'sql' not in data:
+            return error_response('请提供SQL查询语句', status_code=400)
+
+        # 重定向到新的查询接口
+        return execute_query(current_user)
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'execute_sql',
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/tables/<table_name>/optimize', methods=['POST'])
+@token_required
+def optimize_table(current_user, table_name):
+    """优化表"""
+    try:
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        with db.engine.connect() as conn:
+            # 执行表优化
+            result = conn.execute(text(f"OPTIMIZE TABLE `{table_name}`"))
+            optimize_result = result.fetchall()
+
+            # 格式化结果
+            formatted_result = []
+            for row in optimize_result:
+                formatted_result.append({
+                    'table': row[0] if len(row) > 0 else table_name,
+                    'op': row[1] if len(row) > 1 else 'optimize',
+                    'msg_type': row[2] if len(row) > 2 else 'status',
+                    'msg_text': row[3] if len(row) > 3 else 'OK'
+                })
+
+        logger.info(f"用户 {current_user.username} 优化了表 {table_name}")
+
+        return success_response(
+            data={
+                'table_name': table_name,
+                'operation': 'optimize',
+                'results': formatted_result
+            },
+            message=f'表 {table_name} 优化完成'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'optimize_table',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/tables/<table_name>/repair', methods=['POST'])
+@token_required
+def repair_table(current_user, table_name):
+    """修复表"""
+    try:
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        with db.engine.connect() as conn:
+            # 执行表修复
+            result = conn.execute(text(f"REPAIR TABLE `{table_name}`"))
+            repair_result = result.fetchall()
+
+            # 格式化结果
+            formatted_result = []
+            for row in repair_result:
+                formatted_result.append({
+                    'table': row[0] if len(row) > 0 else table_name,
+                    'op': row[1] if len(row) > 1 else 'repair',
+                    'msg_type': row[2] if len(row) > 2 else 'status',
+                    'msg_text': row[3] if len(row) > 3 else 'OK'
+                })
+
+        logger.info(f"用户 {current_user.username} 修复了表 {table_name}")
+
+        return success_response(
+            data={
+                'table_name': table_name,
+                'operation': 'repair',
+                'results': formatted_result
+            },
+            message=f'表 {table_name} 修复完成'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'repair_table',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/tables/<table_name>/check', methods=['POST'])
+@token_required
+def check_table(current_user, table_name):
+    """检查表完整性"""
+    try:
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        with db.engine.connect() as conn:
+            # 执行表检查
+            result = conn.execute(text(f"CHECK TABLE `{table_name}`"))
+            check_result = result.fetchall()
+
+            # 格式化结果
+            formatted_result = []
+            for row in check_result:
+                formatted_result.append({
+                    'table': row[0] if len(row) > 0 else table_name,
+                    'op': row[1] if len(row) > 1 else 'check',
+                    'msg_type': row[2] if len(row) > 2 else 'status',
+                    'msg_text': row[3] if len(row) > 3 else 'OK'
+                })
+
+        logger.info(f"用户 {current_user.username} 检查了表 {table_name}")
+
+        return success_response(
+            data={
+                'table_name': table_name,
+                'operation': 'check',
+                'results': formatted_result
+            },
+            message=f'表 {table_name} 检查完成'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'check_table',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/tables/<table_name>/truncate', methods=['POST'])
+@token_required
+def truncate_table(current_user, table_name):
+    """清空表数据（危险操作）"""
+    try:
+        # 安全检查：只有管理员可以执行
+        if not getattr(current_user, 'is_admin', False):
+            return error_response('只有管理员可以执行清空表操作', status_code=403)
+
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        # 获取确认参数
+        data = request.get_json() or {}
+        confirm = data.get('confirm', False)
+
+        if not confirm:
+            return error_response('请确认要清空表数据，设置 confirm: true', status_code=400)
+
+        # 获取清空前的行数
+        with db.engine.connect() as conn:
+            count_result = conn.execute(text(f"SELECT COUNT(*) as count FROM `{table_name}`"))
+            original_count = count_result.fetchone()[0]
+
+            # 执行清空操作
+            conn.execute(text(f"TRUNCATE TABLE `{table_name}`"))
+            conn.commit()
+
+        logger.warning(f"管理员 {current_user.username} 清空了表 {table_name}，原有 {original_count} 行数据")
+
+        return success_response(
+            data={
+                'table_name': table_name,
+                'operation': 'truncate',
+                'original_rows': original_count,
+                'current_rows': 0
+            },
+            message=f'表 {table_name} 已清空，删除了 {original_count} 行数据'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'truncate_table',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/tables/<table_name>/size', methods=['GET'])
+@token_required
+def get_table_size(current_user, table_name):
+    """获取表大小信息"""
+    try:
+        inspector = inspect(db.engine)
+
+        # 检查表是否存在
+        if table_name not in inspector.get_table_names():
+            return error_response(f'表 {table_name} 不存在', status_code=404)
+
+        with db.engine.connect() as conn:
+            # 获取表大小信息
+            size_query = text("""
+                SELECT
+                    table_name,
+                    table_rows,
+                    data_length,
+                    index_length,
+                    (data_length + index_length) as total_length,
+                    avg_row_length,
+                    auto_increment
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+                AND table_name = :table_name
+            """)
+
+            result = conn.execute(size_query, {'table_name': table_name})
+            row = result.fetchone()
+
+            if not row:
+                return error_response(f'无法获取表 {table_name} 的大小信息', status_code=404)
+
+            # 格式化大小信息
+            def format_bytes(bytes_value):
+                if bytes_value is None:
+                    return "0 B"
+
+                for unit in ['B', 'KB', 'MB', 'GB']:
+                    if bytes_value < 1024.0:
+                        return f"{bytes_value:.2f} {unit}"
+                    bytes_value /= 1024.0
+                return f"{bytes_value:.2f} TB"
+
+            size_info = {
+                'table_name': row[0],
+                'rows': row[1] or 0,
+                'data_size': row[2] or 0,
+                'index_size': row[3] or 0,
+                'total_size': row[4] or 0,
+                'avg_row_length': row[5] or 0,
+                'auto_increment': row[6],
+                'formatted': {
+                    'data_size': format_bytes(row[2] or 0),
+                    'index_size': format_bytes(row[3] or 0),
+                    'total_size': format_bytes(row[4] or 0),
+                    'avg_row_length': format_bytes(row[5] or 0)
+                }
+            }
+
+        return success_response(
+            data=size_info,
+            message=f'获取表 {table_name} 大小信息成功'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'get_table_size',
+            'table_name': table_name,
+            'user_id': current_user.id if current_user else None
+        })
+
+@table_management_bp.route('/database/info', methods=['GET'])
+@token_required
+def get_database_info(current_user):
+    """获取数据库整体信息"""
+    try:
+        with db.engine.connect() as conn:
+            # 获取数据库基本信息
+            db_info_query = text("""
+                SELECT
+                    SCHEMA_NAME as database_name,
+                    DEFAULT_CHARACTER_SET_NAME as charset,
+                    DEFAULT_COLLATION_NAME as collation
+                FROM information_schema.SCHEMATA
+                WHERE SCHEMA_NAME = DATABASE()
+            """)
+
+            db_result = conn.execute(db_info_query)
+            db_row = db_result.fetchone()
+
+            # 获取表统计信息
+            tables_query = text("""
+                SELECT
+                    COUNT(*) as table_count,
+                    SUM(table_rows) as total_rows,
+                    SUM(data_length) as total_data_size,
+                    SUM(index_length) as total_index_size,
+                    SUM(data_length + index_length) as total_size
+                FROM information_schema.tables
+                WHERE table_schema = DATABASE()
+            """)
+
+            tables_result = conn.execute(tables_query)
+            tables_row = tables_result.fetchone()
+
+            # 获取数据库版本
+            version_result = conn.execute(text("SELECT VERSION() as version"))
+            version = version_result.fetchone()[0]
+
+            # 格式化大小
+            def format_bytes(bytes_value):
+                if bytes_value is None:
+                    return "0 B"
+
+                for unit in ['B', 'KB', 'MB', 'GB']:
+                    if bytes_value < 1024.0:
+                        return f"{bytes_value:.2f} {unit}"
+                    bytes_value /= 1024.0
+                return f"{bytes_value:.2f} TB"
+
+            database_info = {
+                'database_name': db_row[0] if db_row else 'Unknown',
+                'charset': db_row[1] if db_row else 'Unknown',
+                'collation': db_row[2] if db_row else 'Unknown',
+                'version': version,
+                'statistics': {
+                    'table_count': tables_row[0] or 0,
+                    'total_rows': tables_row[1] or 0,
+                    'total_data_size': tables_row[2] or 0,
+                    'total_index_size': tables_row[3] or 0,
+                    'total_size': tables_row[4] or 0,
+                    'formatted': {
+                        'total_data_size': format_bytes(tables_row[2] or 0),
+                        'total_index_size': format_bytes(tables_row[3] or 0),
+                        'total_size': format_bytes(tables_row[4] or 0)
+                    }
+                }
+            }
+
+        return success_response(
+            data=database_info,
+            message='获取数据库信息成功'
+        )
+
+    except Exception as e:
+        return handle_exception(e, context={
+            'function': 'get_database_info',
+            'user_id': current_user.id if current_user else None
+        })
+
 # 注册错误处理器
 @table_management_bp.errorhandler(Exception)
 def handle_table_management_error(error):
