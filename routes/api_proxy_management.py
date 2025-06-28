@@ -1927,7 +1927,19 @@ def update_available_models_config(current_user):
         import os
         import shutil
 
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '..', 'config.json')
+        # 正确计算配置文件路径
+        # routes/api_proxy_management.py -> routes/ -> 项目根目录
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        config_path = os.path.join(project_root, 'config.json')
+
+        logger.info(f"配置文件路径: {config_path}")
+        logger.info(f"配置文件是否存在: {os.path.exists(config_path)}")
+
+        if not os.path.exists(config_path):
+            return jsonify({
+                'success': False,
+                'message': f'配置文件不存在: {config_path}'
+            }), 404
 
         # 备份原配置文件
         backup_path = f"{config_path}.backup.{int(time.time())}"
@@ -1967,10 +1979,14 @@ def update_available_models_config(current_user):
         })
 
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
         logger.error(f"更新配置文件异常: {str(e)}")
+        logger.error(f"详细错误信息: {error_details}")
         return jsonify({
             'success': False,
-            'message': '更新配置文件失败'
+            'message': f'更新配置文件失败: {str(e)}',
+            'error_details': error_details if current_user.is_admin else None
         }), 500
 
 # 全局变量存储测试进度
