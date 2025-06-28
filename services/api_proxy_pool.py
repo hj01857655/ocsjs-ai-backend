@@ -275,8 +275,12 @@ class ApiProxyPool:
             logger.info(f"配置文件是否存在: {os.path.exists(self.config_file)}")
 
             if not os.path.exists(self.config_file):
-                logger.error(f"配置文件不存在: {self.config_file}")
-                return
+                logger.warning(f"配置文件不存在: {self.config_file}")
+                # 尝试创建默认配置文件
+                self._create_default_config()
+                if not os.path.exists(self.config_file):
+                    logger.error(f"无法创建配置文件: {self.config_file}")
+                    return
 
             with open(self.config_file, 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -311,6 +315,79 @@ class ApiProxyPool:
         except Exception as e:
             logger.error(f"加载配置文件失败: {str(e)}")
             self.proxies = []
+
+    def _create_default_config(self):
+        """创建默认配置文件"""
+        try:
+            logger.info(f"尝试创建默认配置文件: {self.config_file}")
+
+            # 从本地 config.json 复制内容（如果存在）
+            local_config_path = os.path.join(os.path.dirname(__file__), '../config.json')
+            if os.path.exists(local_config_path):
+                logger.info(f"找到本地配置文件，复制到: {self.config_file}")
+                import shutil
+                shutil.copy2(local_config_path, self.config_file)
+                return
+
+            # 如果没有本地配置文件，创建一个基本的默认配置
+            default_config = {
+                "service": {
+                    "host": "0.0.0.0",
+                    "port": 5000,
+                    "debug": False
+                },
+                "third_party_apis": [
+                    {
+                        "name": "Default API",
+                        "api_base": "https://api.openai.com/v1",
+                        "api_keys": ["your-api-key-here"],
+                        "model": "gpt-3.5-turbo",
+                        "models": ["gpt-3.5-turbo", "gpt-4"],
+                        "available_models": [],
+                        "is_active": False,
+                        "priority": 1
+                    }
+                ],
+                "cache": {
+                    "enable": True,
+                    "expiration": 2592000
+                },
+                "security": {
+                    "access_token": None,
+                    "secret_key": "default-secret-key"
+                },
+                "database": {
+                    "type": "mysql",
+                    "host": "localhost",
+                    "port": 3306,
+                    "user": "root",
+                    "password": "123456",
+                    "name": "ocs_qa"
+                },
+                "redis": {
+                    "enabled": True,
+                    "host": "localhost",
+                    "port": 6379,
+                    "password": "",
+                    "db": 0
+                },
+                "record": {
+                    "enable": True
+                }
+            }
+
+            # 确保目录存在
+            config_dir = os.path.dirname(self.config_file)
+            if config_dir and not os.path.exists(config_dir):
+                os.makedirs(config_dir, exist_ok=True)
+
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(default_config, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"成功创建默认配置文件: {self.config_file}")
+
+        except Exception as e:
+            logger.error(f"创建默认配置文件失败: {str(e)}")
 
     def get_active_proxies(self) -> List[ApiProxy]:
         """获取活跃的代理"""
