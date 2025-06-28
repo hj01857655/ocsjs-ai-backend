@@ -71,6 +71,7 @@ from routes.cache_management import cache_bp
 from routes.db_monitor import db_monitor_bp
 from routes.system_monitor import system_monitor_bp
 from routes.table_management import table_management_bp
+from api_docs import create_api_docs, create_custom_api_docs
 
 # 导入服务
 from services.cache import get_cache
@@ -244,6 +245,34 @@ def register_blueprints(app):
     app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')
     app.register_blueprint(system_monitor_bp, url_prefix='/api/system-monitor')
     app.register_blueprint(table_management_bp, url_prefix='/api/table-management')
+
+    # 创建 API 文档
+    try:
+        api = create_api_docs(app)
+        print("✅ API 文档已启用")
+    except Exception as e:
+        print(f"⚠️ API 文档启用失败: {str(e)}")
+
+    # 添加自定义 API 文档路由
+    @app.route('/api/docs-custom')
+    def api_docs_custom():
+        """自定义 API 文档页面"""
+        try:
+            from flask import render_template
+            return render_template('api_docs.html')
+        except:
+            return create_custom_api_docs()
+
+    @app.route('/api/docs-info')
+    def api_docs_info():
+        """API 文档信息"""
+        return {
+            'swagger_ui': '/api/docs/',
+            'custom_docs': '/api/docs-custom',
+            'total_endpoints': 25,
+            'categories': ['数据库监控', '表管理'],
+            'authentication': '无需认证（测试模式）'
+        }
 
 def register_error_handlers(app):
     """注册错误处理器"""
