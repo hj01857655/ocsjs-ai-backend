@@ -6,7 +6,7 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy import text, inspect
 from utils.auth import token_required
-from utils.response import success_response, error_response, handle_exception
+from utils.response_handler import success_response, error_response, handle_exception
 from utils.logger import get_logger
 from models.models import db
 import json
