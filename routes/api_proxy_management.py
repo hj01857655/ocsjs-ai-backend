@@ -66,6 +66,58 @@ def test_proxy_pool_status():
             'message': f'测试失败: {str(e)}'
         }), 500
 
+@api_proxy_management_bp.route('/test-list', methods=['GET'])
+def test_proxy_list():
+    """测试代理列表（无需认证）"""
+    try:
+        proxy_pool = get_api_proxy_pool()
+        proxies = proxy_pool.proxies
+
+        # 获取查询参数
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+
+        # 简单分页
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_proxies = proxies[start:end]
+
+        # 构建响应数据
+        proxy_list = []
+        for proxy in paginated_proxies:
+            proxy_data = {
+                'name': proxy.name,
+                'api_base': proxy.api_base,
+                'model': proxy.model,
+                'models': proxy.models[:5],  # 只显示前5个模型
+                'available_models': proxy.available_models[:5],  # 只显示前5个可用模型
+                'is_active': proxy.is_active,
+                'priority': proxy.priority,
+                'api_key_count': len(proxy.api_keys),
+                'status': 'active' if proxy.is_active else 'inactive'
+            }
+            proxy_list.append(proxy_data)
+
+        return jsonify({
+            'success': True,
+            'data': {
+                'proxies': proxy_list,
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total': len(proxies),
+                    'pages': (len(proxies) + per_page - 1) // per_page
+                }
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"测试代理列表异常: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'测试失败: {str(e)}'
+        }), 500
+
 def _make_proxy_request(proxy, model, messages, timeout=15, max_tokens=50):
     """统一的代理API请求方法"""
     import requests
