@@ -121,50 +121,37 @@ def test_db_connection():
     try:
         import time
         from sqlalchemy import create_engine, text
+        import urllib.parse as urlparse
 
-        # 安全地导入配置变量
+        # 获取数据库连接字符串
         try:
             from config.config import SQLALCHEMY_DATABASE_URI
-            logger.info(f"成功导入数据库配置")
-        except ImportError as e:
-            logger.error(f"导入配置失败: {str(e)}")
-            return error_response(f'配置导入失败: {str(e)}', status_code=500)
-
-        # 尝试导入其他配置变量（可能不存在）
-        try:
-            from config.config import DB_HOST, DB_PORT, DB_NAME, DB_USER
-            db_info = {
-                'host': DB_HOST,
-                'port': DB_PORT,
-                'database': DB_NAME,
-                'user': DB_USER,
-                'connection_string': SQLALCHEMY_DATABASE_URI.split('@')[1] if '@' in SQLALCHEMY_DATABASE_URI else 'Unknown'
-            }
-        except (ImportError, NameError) as e:
-            logger.warning(f"部分配置变量不可用: {str(e)}")
-            # 从连接字符串解析信息
-            if SQLALCHEMY_DATABASE_URI:
-                import urllib.parse as urlparse
-                try:
-                    url = urlparse.urlparse(SQLALCHEMY_DATABASE_URI)
-                    db_info = {
-                        'host': url.hostname or 'Unknown',
-                        'port': url.port or 'Unknown',
-                        'database': url.path[1:] if url.path else 'Unknown',
-                        'user': url.username or 'Unknown',
-                        'connection_string': SQLALCHEMY_DATABASE_URI.split('@')[1] if '@' in SQLALCHEMY_DATABASE_URI else 'Unknown'
-                    }
-                except Exception as parse_error:
-                    logger.error(f"解析连接字符串失败: {str(parse_error)}")
-                    db_info = {
-                        'host': 'Unknown',
-                        'port': 'Unknown',
-                        'database': 'Unknown',
-                        'user': 'Unknown',
-                        'connection_string': 'Parse Error'
-                    }
-            else:
+            if not SQLALCHEMY_DATABASE_URI:
                 return error_response('数据库连接字符串未配置', status_code=500)
+            logger.info(f"成功获取数据库配置")
+        except Exception as e:
+            logger.error(f"获取数据库配置失败: {str(e)}")
+            return error_response(f'数据库配置获取失败: {str(e)}', status_code=500)
+
+        # 从连接字符串解析数据库信息
+        try:
+            url = urlparse.urlparse(SQLALCHEMY_DATABASE_URI)
+            db_info = {
+                'host': url.hostname or 'Unknown',
+                'port': url.port or 'Unknown',
+                'database': url.path[1:] if url.path else 'Unknown',
+                'user': url.username or 'Unknown',
+                'connection_string': f"{url.hostname}:{url.port}{url.path}" if url.hostname else 'Unknown'
+            }
+        except Exception as parse_error:
+            logger.error(f"解析连接字符串失败: {str(parse_error)}")
+            db_info = {
+                'host': 'Unknown',
+                'port': 'Unknown',
+                'database': 'Unknown',
+                'user': 'Unknown',
+                'connection_string': 'Parse Error'
+            }
 
         logger.info(f"开始测试数据库连接: {db_info['host']}:{db_info['port']}")
 

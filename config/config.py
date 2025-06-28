@@ -309,10 +309,28 @@ def update_config(new_config):
         raise e
 
 # 导出数据库配置变量供外部模块使用
-SQLALCHEMY_DATABASE_URI = getattr(Config, 'SQLALCHEMY_DATABASE_URI', None)
-DB_TYPE = getattr(Config, 'DB_TYPE', 'mysql')
-DB_HOST = getattr(Config, 'DB_HOST', 'localhost')
-DB_PORT = getattr(Config, 'DB_PORT', 3306)
-DB_USER = getattr(Config, 'DB_USER', 'root')
-DB_PASSWORD = getattr(Config, 'DB_PASSWORD', '***')
-DB_NAME = getattr(Config, 'DB_NAME', 'ocs_qa')
+# 直接从 Config 类获取，如果不存在则使用默认值
+try:
+    SQLALCHEMY_DATABASE_URI = getattr(Config, 'SQLALCHEMY_DATABASE_URI', None)
+    DB_TYPE = getattr(Config, 'DB_TYPE', 'mysql')
+    DB_HOST = getattr(Config, 'DB_HOST', 'localhost')
+    DB_PORT = getattr(Config, 'DB_PORT', 3306)
+    DB_USER = getattr(Config, 'DB_USER', 'root')
+    DB_PASSWORD = getattr(Config, 'DB_PASSWORD', '***')
+    DB_NAME = getattr(Config, 'DB_NAME', 'ocs_qa')
+
+    # 如果 SQLALCHEMY_DATABASE_URI 为空，尝试构建一个
+    if not SQLALCHEMY_DATABASE_URI:
+        print("⚠️ SQLALCHEMY_DATABASE_URI 未设置，尝试使用默认配置")
+        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+except Exception as e:
+    print(f"❌ 导出配置变量失败: {str(e)}")
+    # 使用默认值
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://root:123456@localhost:3306/ocs_qa"
+    DB_TYPE = 'mysql'
+    DB_HOST = 'localhost'
+    DB_PORT = 3306
+    DB_USER = 'root'
+    DB_PASSWORD = '123456'
+    DB_NAME = 'ocs_qa'
