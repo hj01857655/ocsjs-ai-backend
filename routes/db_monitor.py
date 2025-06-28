@@ -199,7 +199,8 @@ def test_db_connection():
 
         # 获取数据库连接字符串
         try:
-            from config.config import SQLALCHEMY_DATABASE_URI
+            from flask import current_app
+            SQLALCHEMY_DATABASE_URI = current_app.config.get('SQLALCHEMY_DATABASE_URI')
             if not SQLALCHEMY_DATABASE_URI:
                 return error_response('数据库连接字符串未配置', status_code=500)
             logger.info(f"成功获取数据库配置")

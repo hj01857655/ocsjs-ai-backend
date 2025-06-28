@@ -31,7 +31,7 @@ def search_question(current_user):
         search_service = get_search_service()
         
         # 执行搜索
-        result = search_service.search(question)
+        result = search_service.search_question(question)
         
         if result and result.get('success'):
             # 记录搜索历史（如果用户已登录）

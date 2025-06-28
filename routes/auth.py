@@ -135,10 +135,9 @@ def login():
         add_system_log(
             level='info',
             source='auth',
-            message=f'用户登录成功: {username}',
+            message=f'用户登录成功: {username} | Session: {session_record.session_id}',
             user_id=user.id,
-            ip_address=request.remote_addr,
-            request_id=session_record.session_id
+            ip_address=request.remote_addr
         )
 
         logger.info(f"用户登录成功: {username} - {request.remote_addr}")
