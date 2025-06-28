@@ -70,6 +70,7 @@ from routes.settings import settings_bp
 from routes.cache_management import cache_bp
 from routes.db_monitor import db_monitor_bp
 from routes.system_monitor import system_monitor_bp
+from routes.table_management import table_management_bp
 
 # 导入服务
 from services.cache import get_cache
@@ -242,6 +243,7 @@ def register_blueprints(app):
     app.register_blueprint(cache_bp, url_prefix='/api/cache')
     app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')
     app.register_blueprint(system_monitor_bp, url_prefix='/api/system-monitor')
+    app.register_blueprint(table_management_bp, url_prefix='/api/table-management')
 
 def register_error_handlers(app):
     """注册错误处理器"""
