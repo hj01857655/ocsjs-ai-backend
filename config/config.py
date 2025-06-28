@@ -150,6 +150,15 @@ class Config:
             f"&sql_mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
         )
 
+    # 将数据库配置设置为类属性，以便外部导入
+    Config.SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI
+    Config.DB_TYPE = DB_TYPE
+    Config.DB_HOST = DB_HOST
+    Config.DB_PORT = DB_PORT
+    Config.DB_USER = DB_USER
+    Config.DB_PASSWORD = DB_PASSWORD
+    Config.DB_NAME = DB_NAME
+
     # 数据库连接池配置 - 增强版本
     SQLALCHEMY_ENGINE_OPTIONS = {
         # 基础连接池配置
@@ -279,3 +288,12 @@ def update_config(new_config):
         return True
     except Exception as e:
         raise e
+
+# 导出数据库配置变量供外部模块使用
+SQLALCHEMY_DATABASE_URI = getattr(Config, 'SQLALCHEMY_DATABASE_URI', None)
+DB_TYPE = getattr(Config, 'DB_TYPE', 'mysql')
+DB_HOST = getattr(Config, 'DB_HOST', 'localhost')
+DB_PORT = getattr(Config, 'DB_PORT', 3306)
+DB_USER = getattr(Config, 'DB_USER', 'root')
+DB_PASSWORD = getattr(Config, 'DB_PASSWORD', '***')
+DB_NAME = getattr(Config, 'DB_NAME', 'ocs_qa')
