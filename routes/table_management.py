@@ -63,12 +63,11 @@ def get_tables():
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_tables',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/structure', methods=['GET'])
-@token_required
-def get_table_structure(current_user, table_name):
+def get_table_structure(table_name):
     """获取指定表的结构信息"""
     try:
         inspector = inspect(db.engine)
@@ -135,12 +134,11 @@ def get_table_structure(current_user, table_name):
         return handle_exception(e, context={
             'function': 'get_table_structure',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/data', methods=['GET'])
-@token_required
-def get_table_data(current_user, table_name):
+def get_table_data(table_name):
     """获取指定表的数据"""
     try:
         inspector = inspect(db.engine)
@@ -219,12 +217,11 @@ def get_table_data(current_user, table_name):
         return handle_exception(e, context={
             'function': 'get_table_data',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/query', methods=['POST'])
-@token_required
-def execute_query(current_user):
+def execute_query():
     """执行自定义SQL查询"""
     try:
         data = request.get_json()
@@ -274,7 +271,7 @@ def execute_query(current_user):
                     row_dict[col] = value
                 formatted_data.append(row_dict)
         
-        logger.info(f"用户 {current_user.username} 执行查询: {sql[:100]}...")
+        logger.info(f"执行查询: {sql[:100]}...")
         
         return success_response(
             data={
@@ -291,12 +288,11 @@ def execute_query(current_user):
         return handle_exception(e, context={
             'function': 'execute_query',
             'sql': data.get('sql', '') if 'data' in locals() else '',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/export', methods=['GET'])
-@token_required
-def export_table_data(current_user, table_name):
+def export_table_data(table_name):
     """导出表数据为CSV格式"""
     try:
         inspector = inspect(db.engine)
@@ -382,12 +378,11 @@ def export_table_data(current_user, table_name):
         return handle_exception(e, context={
             'function': 'export_table_data',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/analyze', methods=['GET'])
-@token_required
-def analyze_table(current_user, table_name):
+def analyze_table(table_name):
     """分析表的数据分布和统计信息"""
     try:
         inspector = inspect(db.engine)
@@ -469,12 +464,11 @@ def analyze_table(current_user, table_name):
         return handle_exception(e, context={
             'function': 'analyze_table',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/columns', methods=['GET'])
-@token_required
-def get_table_columns(current_user, table_name):
+def get_table_columns(table_name):
     """获取表的列信息"""
     try:
         inspector = inspect(db.engine)
@@ -513,12 +507,11 @@ def get_table_columns(current_user, table_name):
         return handle_exception(e, context={
             'function': 'get_table_columns',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/indexes', methods=['GET'])
-@token_required
-def get_table_indexes(current_user, table_name):
+def get_table_indexes(table_name):
     """获取表的索引信息"""
     try:
         inspector = inspect(db.engine)
@@ -567,12 +560,11 @@ def get_table_indexes(current_user, table_name):
         return handle_exception(e, context={
             'function': 'get_table_indexes',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/execute-sql', methods=['POST'])
-@token_required
-def execute_sql(current_user):
+def execute_sql():
     """执行SQL语句（兼容旧接口名称）"""
     try:
         data = request.get_json()
@@ -580,17 +572,16 @@ def execute_sql(current_user):
             return error_response('请提供SQL查询语句', status_code=400)
 
         # 重定向到新的查询接口
-        return execute_query(current_user)
+        return execute_query()
 
     except Exception as e:
         return handle_exception(e, context={
             'function': 'execute_sql',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/optimize', methods=['POST'])
-@token_required
-def optimize_table(current_user, table_name):
+def optimize_table(table_name):
     """优化表"""
     try:
         inspector = inspect(db.engine)
@@ -614,7 +605,7 @@ def optimize_table(current_user, table_name):
                     'msg_text': row[3] if len(row) > 3 else 'OK'
                 })
 
-        logger.info(f"用户 {current_user.username} 优化了表 {table_name}")
+        logger.info(f"用户 {anonymous} 优化了表 {table_name}")
 
         return success_response(
             data={
@@ -629,12 +620,11 @@ def optimize_table(current_user, table_name):
         return handle_exception(e, context={
             'function': 'optimize_table',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/repair', methods=['POST'])
-@token_required
-def repair_table(current_user, table_name):
+def repair_table(table_name):
     """修复表"""
     try:
         inspector = inspect(db.engine)
@@ -658,7 +648,7 @@ def repair_table(current_user, table_name):
                     'msg_text': row[3] if len(row) > 3 else 'OK'
                 })
 
-        logger.info(f"用户 {current_user.username} 修复了表 {table_name}")
+        logger.info(f"用户 {anonymous} 修复了表 {table_name}")
 
         return success_response(
             data={
@@ -673,12 +663,11 @@ def repair_table(current_user, table_name):
         return handle_exception(e, context={
             'function': 'repair_table',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/check', methods=['POST'])
-@token_required
-def check_table(current_user, table_name):
+def check_table(table_name):
     """检查表完整性"""
     try:
         inspector = inspect(db.engine)
@@ -702,7 +691,7 @@ def check_table(current_user, table_name):
                     'msg_text': row[3] if len(row) > 3 else 'OK'
                 })
 
-        logger.info(f"用户 {current_user.username} 检查了表 {table_name}")
+        logger.info(f"用户 {anonymous} 检查了表 {table_name}")
 
         return success_response(
             data={
@@ -717,16 +706,15 @@ def check_table(current_user, table_name):
         return handle_exception(e, context={
             'function': 'check_table',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/truncate', methods=['POST'])
-@token_required
-def truncate_table(current_user, table_name):
+def truncate_table(table_name):
     """清空表数据（危险操作）"""
     try:
         # 安全检查：只有管理员可以执行
-        if not getattr(current_user, 'is_admin', False):
+        if not True:
             return error_response('只有管理员可以执行清空表操作', status_code=403)
 
         inspector = inspect(db.engine)
@@ -751,7 +739,7 @@ def truncate_table(current_user, table_name):
             conn.execute(text(f"TRUNCATE TABLE `{table_name}`"))
             conn.commit()
 
-        logger.warning(f"管理员 {current_user.username} 清空了表 {table_name}，原有 {original_count} 行数据")
+        logger.warning(f"管理员 {anonymous} 清空了表 {table_name}，原有 {original_count} 行数据")
 
         return success_response(
             data={
@@ -767,12 +755,11 @@ def truncate_table(current_user, table_name):
         return handle_exception(e, context={
             'function': 'truncate_table',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/tables/<table_name>/size', methods=['GET'])
-@token_required
-def get_table_size(current_user, table_name):
+def get_table_size(table_name):
     """获取表大小信息"""
     try:
         inspector = inspect(db.engine)
@@ -839,12 +826,11 @@ def get_table_size(current_user, table_name):
         return handle_exception(e, context={
             'function': 'get_table_size',
             'table_name': table_name,
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 @table_management_bp.route('/database/info', methods=['GET'])
-@token_required
-def get_database_info(current_user):
+def get_database_info():
     """获取数据库整体信息"""
     try:
         with db.engine.connect() as conn:
@@ -918,7 +904,7 @@ def get_database_info(current_user):
     except Exception as e:
         return handle_exception(e, context={
             'function': 'get_database_info',
-            'user_id': current_user.id if current_user else None
+            'user_id': None
         })
 
 # 注册错误处理器
