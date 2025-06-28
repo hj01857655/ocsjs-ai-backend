@@ -58,24 +58,28 @@ from utils.auth import init_auth
 from utils.db_monitor import init_db_monitor
 from utils.system_monitor import init_system_monitor
 
-# 导入路由模块
+# 导入核心路由模块
 from routes.auth import auth_bp
 from routes.questions import questions_bp
-from routes.question_management import question_management_bp
-from routes.api_proxy_management import api_proxy_management_bp
-from routes.proxy_pool import proxy_pool_bp
-from routes.concurrent_management import concurrent_management_bp
-from routes.logs import logs_bp
-from routes.settings import settings_bp
-from routes.cache_management import cache_bp
 from routes.db_monitor import db_monitor_bp
-from routes.system_monitor import system_monitor_bp
 from routes.table_management import table_management_bp
 
-# 导入服务
-from services.cache import get_cache
+# 已删除的非核心模块：
+# from routes.question_management import question_management_bp
+# from routes.api_proxy_management import api_proxy_management_bp
+# from routes.proxy_pool import proxy_pool_bp
+# from routes.concurrent_management import concurrent_management_bp
+# from routes.logs import logs_bp
+# from routes.settings import settings_bp
+# from routes.cache_management import cache_bp
+# from routes.system_monitor import system_monitor_bp
+
+# 导入核心服务
 from services.search_service import get_search_service
-from services.api_proxy_pool import get_api_proxy_pool
+
+# 已删除的非核心服务：
+# from services.cache import get_cache
+# from services.api_proxy_pool import get_api_proxy_pool
 
 def create_app():
     """创建Flask应用实例"""
@@ -215,47 +219,55 @@ def create_app():
     return app
 
 def init_services(app):
-    """初始化服务"""
+    """初始化核心服务"""
     with app.app_context():
-        # 初始化缓存服务
-        cache = get_cache()
-        app.logger.info(f"缓存服务初始化完成: {cache.get_stats()}")
-
         # 初始化搜索服务
         search_service = get_search_service()
         app.logger.info("搜索服务初始化完成")
 
-        # 初始化API代理池
-        proxy_pool = get_api_proxy_pool()
-        app.logger.info(f"API代理池初始化完成: {proxy_pool.get_pool_status()}")
+        # 已删除的非核心服务：
+        # - 缓存服务 (非必需)
+        # - API代理池 (非必需)
 
 def register_blueprints(app):
-    """注册所有蓝图"""
-    # API路由
-    app.register_blueprint(auth_bp, url_prefix='/api/auth')
-    app.register_blueprint(questions_bp, url_prefix='/api/questions')
-    app.register_blueprint(question_management_bp, url_prefix='/api/question-management')
-    app.register_blueprint(api_proxy_management_bp, url_prefix='/api/api-proxy-management')
-    app.register_blueprint(proxy_pool_bp, url_prefix='/api/proxy-pool')
-    app.register_blueprint(concurrent_management_bp, url_prefix='/api/concurrent')
-    app.register_blueprint(logs_bp, url_prefix='/api/logs')
-    app.register_blueprint(settings_bp, url_prefix='/api/settings')
-    app.register_blueprint(cache_bp, url_prefix='/api/cache')
-    app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')
-    app.register_blueprint(system_monitor_bp, url_prefix='/api/system-monitor')
-    app.register_blueprint(table_management_bp, url_prefix='/api/table-management')
+    """注册核心蓝图 - 只保留必要功能"""
+    # 核心功能
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')                    # 认证 - 必需
+    app.register_blueprint(questions_bp, url_prefix='/api/questions')         # 问答 - 核心功能
+    app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')       # 数据库监控 - 必需
+    app.register_blueprint(table_management_bp, url_prefix='/api/table-management')  # 表管理 - 必需
+
+    # 以下模块已删除（非核心功能）：
+    # - question_management_bp (题库管理 - 复杂功能)
+    # - api_proxy_management_bp (API代理管理 - 非必需)
+    # - proxy_pool_bp (代理池 - 非必需)
+    # - concurrent_management_bp (并发管理 - 非必需)
+    # - logs_bp (日志管理 - 非必需)
+    # - settings_bp (系统设置 - 非必需)
+    # - cache_bp (缓存管理 - 非必需)
+    # - system_monitor_bp (系统监控 - 非必需)
 
     # API 文档数据接口
     @app.route('/api/docs-info')
     def api_docs_info():
         """API 文档信息 - 供前端使用"""
         return {
-            'title': 'EduBrain AI 数据库管理 API',
+            'title': 'EduBrain AI 智能问答系统 API',
             'version': '1.0.0',
-            'description': '完整的数据库管理和监控 API',
+            'description': '精简的智能问答系统 API - 只包含核心功能',
             'base_url': request.host_url.rstrip('/'),
-            'total_endpoints': 23,
+            'total_endpoints': 35,  # 精简后的接口数
             'categories': [
+                {
+                    'name': '认证授权',
+                    'description': '用户认证、登录、注册、权限管理',
+                    'endpoint_count': 6
+                },
+                {
+                    'name': '问答系统',
+                    'description': '智能问答、搜索、历史记录',
+                    'endpoint_count': 6
+                },
                 {
                     'name': '数据库监控',
                     'description': '数据库连接、统计、健康检查等监控功能',
@@ -268,21 +280,135 @@ def register_blueprints(app):
                 }
             ],
             'authentication': {
-                'required': False,
-                'type': 'none',
-                'note': '当前所有接口无需认证（测试模式）'
+                'required': 'mixed',
+                'type': 'JWT Token',
+                'note': '问答系统需要认证，数据库相关接口当前无需认证（测试模式）'
             },
             'database': {
                 'type': 'MySQL',
                 'provider': 'Railway',
                 'connection': '100% 真实数据库对接'
-            }
+            },
+            'removed_features': [
+                '题库管理（复杂导入导出功能）',
+                'API代理管理',
+                '代理池管理',
+                '并发管理',
+                '日志管理',
+                '系统设置',
+                '缓存管理',
+                '系统监控',
+                '统计功能'
+            ]
         }
 
     @app.route('/api/docs-endpoints')
     def api_docs_endpoints():
         """API 接口列表 - 供前端使用"""
         return {
+            'auth': [
+                {
+                    'method': 'POST',
+                    'path': '/api/auth/login',
+                    'name': '用户登录',
+                    'description': '用户登录认证，获取访问令牌',
+                    'auth_required': False,
+                    'parameters': [
+                        {
+                            'name': 'username',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': True,
+                            'description': '用户名'
+                        },
+                        {
+                            'name': 'password',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': True,
+                            'description': '密码'
+                        }
+                    ]
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/auth/register',
+                    'name': '用户注册',
+                    'description': '注册新用户账号',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/auth/profile',
+                    'name': '获取用户信息',
+                    'description': '获取当前用户的详细信息',
+                    'auth_required': True
+                }
+            ],
+            'questions': [
+                {
+                    'method': 'POST',
+                    'path': '/api/questions/answer',
+                    'name': '智能问答',
+                    'description': '提交问题获取AI生成的答案',
+                    'auth_required': True,
+                    'parameters': [
+                        {
+                            'name': 'question',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': True,
+                            'description': '问题内容'
+                        },
+                        {
+                            'name': 'context',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': False,
+                            'description': '问题上下文'
+                        }
+                    ]
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/questions/history',
+                    'name': '问答历史',
+                    'description': '获取用户的问答历史记录',
+                    'auth_required': True
+                }
+            ],
+            'api_proxy_management': [
+                {
+                    'method': 'GET',
+                    'path': '/api/api-proxy-management/list',
+                    'name': '获取API代理列表',
+                    'description': '获取所有配置的API代理信息',
+                    'auth_required': True
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/api-proxy-management/test',
+                    'name': '测试API代理',
+                    'description': '测试指定API代理的连通性和响应时间',
+                    'auth_required': True
+                }
+            ],
+            'settings': [
+                {
+                    'method': 'GET',
+                    'path': '/api/settings/config',
+                    'name': '获取系统配置',
+                    'description': '获取系统的配置参数',
+                    'auth_required': True
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/settings/backup',
+                    'name': '创建系统备份',
+                    'description': '创建系统数据备份',
+                    'auth_required': True
+                }
+            ],
             'db_monitor': [
                 {
                     'method': 'POST',
@@ -448,15 +574,103 @@ def register_blueprints(app):
         return {
             'categories': [
                 {
+                    'id': 'auth',
+                    'name': '认证授权',
+                    'description': '用户认证、登录、注册、权限管理',
+                    'icon': '🔐',
+                    'color': '#6f42c1',
+                    'prefix': '/api/auth',
+                    'endpoints': ['login', 'register', 'logout', 'refresh', 'profile', 'change-password']
+                },
+                {
+                    'id': 'questions',
+                    'name': '问答系统',
+                    'description': '智能问答、题目管理、答案生成',
+                    'icon': '❓',
+                    'color': '#fd7e14',
+                    'prefix': '/api/questions',
+                    'endpoints': ['answer', 'batch', 'history', 'search']
+                },
+                {
+                    'id': 'question-management',
+                    'name': '题目管理',
+                    'description': '题目的增删改查、分类管理',
+                    'icon': '📝',
+                    'color': '#e83e8c',
+                    'prefix': '/api/question-management',
+                    'endpoints': ['create', 'update', 'delete', 'list', 'categories']
+                },
+                {
+                    'id': 'api-proxy-management',
+                    'name': 'API代理管理',
+                    'description': 'API代理配置、状态监控、负载均衡',
+                    'icon': '🔄',
+                    'color': '#20c997',
+                    'prefix': '/api/api-proxy-management',
+                    'endpoints': ['list', 'add', 'update', 'delete', 'test', 'status']
+                },
+                {
+                    'id': 'proxy-pool',
+                    'name': '代理池管理',
+                    'description': '代理池状态、配置、监控',
+                    'icon': '🏊',
+                    'color': '#17a2b8',
+                    'prefix': '/api/proxy-pool',
+                    'endpoints': ['status', 'config', 'refresh', 'stats']
+                },
+                {
+                    'id': 'concurrent',
+                    'name': '并发管理',
+                    'description': '并发控制、任务管理、性能优化',
+                    'icon': '⚡',
+                    'color': '#ffc107',
+                    'prefix': '/api/concurrent',
+                    'endpoints': ['status', 'config', 'tasks', 'performance']
+                },
+                {
+                    'id': 'logs',
+                    'name': '日志管理',
+                    'description': '系统日志、错误日志、访问日志',
+                    'icon': '📋',
+                    'color': '#6c757d',
+                    'prefix': '/api/logs',
+                    'endpoints': ['system', 'error', 'access', 'download']
+                },
+                {
+                    'id': 'settings',
+                    'name': '系统设置',
+                    'description': '系统配置、参数设置、备份恢复',
+                    'icon': '⚙️',
+                    'color': '#495057',
+                    'prefix': '/api/settings',
+                    'endpoints': ['config', 'backup', 'restore', 'database']
+                },
+                {
+                    'id': 'cache',
+                    'name': '缓存管理',
+                    'description': '缓存状态、清理、配置',
+                    'icon': '💾',
+                    'color': '#dc3545',
+                    'prefix': '/api/cache',
+                    'endpoints': ['status', 'clear', 'config', 'stats']
+                },
+                {
                     'id': 'db-monitor',
                     'name': '数据库监控',
                     'description': '数据库连接、统计、健康检查等监控功能',
                     'icon': '📊',
                     'color': '#007bff',
-                    'endpoints': [
-                        'test-connection', 'stats', 'health', 'optimize',
-                        'query-stats', 'pool-status', 'railway-info', 'reset-stats'
-                    ]
+                    'prefix': '/api/db-monitor',
+                    'endpoints': ['test-connection', 'stats', 'health', 'optimize', 'query-stats', 'pool-status', 'railway-info', 'reset-stats']
+                },
+                {
+                    'id': 'system-monitor',
+                    'name': '系统监控',
+                    'description': '系统性能、资源使用、状态监控',
+                    'icon': '🖥️',
+                    'color': '#198754',
+                    'prefix': '/api/system-monitor',
+                    'endpoints': ['stats', 'performance', 'resources', 'health']
                 },
                 {
                     'id': 'table-management',
@@ -464,10 +678,8 @@ def register_blueprints(app):
                     'description': '数据表的查看、管理、查询、维护等功能',
                     'icon': '🗄️',
                     'color': '#28a745',
-                    'endpoints': [
-                        'tables', 'structure', 'columns', 'indexes', 'data',
-                        'query', 'export', 'analyze', 'optimize', 'repair'
-                    ]
+                    'prefix': '/api/table-management',
+                    'endpoints': ['tables', 'structure', 'columns', 'indexes', 'data', 'query', 'export', 'analyze', 'optimize', 'repair']
                 }
             ]
         }
@@ -590,23 +802,68 @@ print(response.json())'''
             'status': 'active',
             'version': '1.0.0',
             'last_updated': '2025-06-28',
-            'total_endpoints': 23,
-            'authentication_required': False,
+            'total_endpoints': 80,
+            'system_name': 'EduBrain AI 智能问答系统',
+            'authentication': {
+                'jwt_enabled': True,
+                'database_apis_public': True,
+                'note': '大部分接口需要JWT认证，数据库相关接口当前公开访问'
+            },
             'database_connection': 'Railway MySQL',
             'features': [
-                '100% 数据库对接',
-                '无需认证访问',
+                '智能问答系统',
+                'API代理管理',
+                '并发控制',
+                '系统监控',
+                '数据库管理',
+                '缓存管理',
+                '日志管理',
+                '用户认证',
                 '实时数据查询',
-                '表管理功能',
-                '性能监控',
-                '优化建议'
+                '性能优化'
+            ],
+            'modules': [
+                {
+                    'name': '认证系统',
+                    'status': 'active',
+                    'endpoints': 6
+                },
+                {
+                    'name': '问答系统',
+                    'status': 'active',
+                    'endpoints': 12
+                },
+                {
+                    'name': 'API代理',
+                    'status': 'active',
+                    'endpoints': 10
+                },
+                {
+                    'name': '数据库管理',
+                    'status': 'active',
+                    'endpoints': 23
+                },
+                {
+                    'name': '系统监控',
+                    'status': 'active',
+                    'endpoints': 14
+                },
+                {
+                    'name': '其他模块',
+                    'status': 'active',
+                    'endpoints': 15
+                }
             ],
             'supported_operations': [
-                'SELECT 查询',
-                '表结构查看',
-                '数据导出',
-                '表优化',
-                '连接监控'
+                '用户认证和授权',
+                '智能问答生成',
+                'API代理管理',
+                '数据库CRUD操作',
+                '系统性能监控',
+                '缓存管理',
+                '日志查看',
+                '配置管理',
+                '备份恢复'
             ]
         }
 
