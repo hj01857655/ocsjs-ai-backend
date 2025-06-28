@@ -231,7 +231,7 @@ def register_blueprints(app):
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(questions_bp, url_prefix='/api/questions')
     app.register_blueprint(question_management_bp, url_prefix='/api/question-management')
-    app.register_blueprint(api_proxy_management_bp, url_prefix='/api-proxy-management')
+    app.register_blueprint(api_proxy_management_bp, url_prefix='/api/api-proxy-management')
     app.register_blueprint(proxy_pool_bp, url_prefix='/api/proxy-pool')
     app.register_blueprint(concurrent_management_bp, url_prefix='/api/concurrent')
     app.register_blueprint(logs_bp, url_prefix='/api/logs')
