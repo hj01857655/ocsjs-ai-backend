@@ -12,27 +12,24 @@ from models.models import db, User, UserSession
 from utils.auth import token_required, admin_required
 from utils.logger import get_logger
 
-# 尝试导入日志模块，如果失败则使用简化版本
-try:
-    from routes.logs import add_system_log
-except ImportError:
-    def add_system_log(level='info', source='system', message='', user_id=None, ip_address=None, context=None):
-        """简化的日志记录函数"""
-        logger = get_logger(__name__)
-        log_message = f"[{source.upper()}] {message}"
-        if user_id:
-            log_message += f" | User: {user_id}"
-        if ip_address:
-            log_message += f" | IP: {ip_address}"
-        if context:
-            log_message += f" | Context: {context}"
+# 简化的日志记录函数 - 直接定义，避免导入问题
+def add_system_log(level='info', source='system', message='', user_id=None, ip_address=None, context=None):
+    """简化的日志记录函数"""
+    logger = get_logger(__name__)
+    log_message = f"[{source.upper()}] {message}"
+    if user_id:
+        log_message += f" | User: {user_id}"
+    if ip_address:
+        log_message += f" | IP: {ip_address}"
+    if context:
+        log_message += f" | Context: {context}"
 
-        if level == 'error':
-            logger.error(log_message)
-        elif level == 'warn':
-            logger.warning(log_message)
-        else:
-            logger.info(log_message)
+    if level == 'error':
+        logger.error(log_message)
+    elif level == 'warn':
+        logger.warning(log_message)
+    else:
+        logger.info(log_message)
 
 auth_bp = Blueprint('auth', __name__)
 logger = get_logger(__name__)

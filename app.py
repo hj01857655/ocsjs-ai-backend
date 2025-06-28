@@ -209,16 +209,7 @@ def create_app():
 
     # 记录系统启动日志
     with app.app_context():
-        try:
-            from routes.logs import add_system_log
-            add_system_log(
-                level='info',
-                source='system',
-                message='系统启动完成',
-                context={'version': '1.0.0', 'environment': app.config.get('ENV', 'development')}
-            )
-        except ImportError:
-            app.logger.info("系统启动完成 - 日志模块未找到，使用标准日志")
+        app.logger.info("系统启动完成 - EduBrain AI v1.0.0")
 
     return app
 
@@ -1047,34 +1038,13 @@ def register_middleware(app):
         if not request.path.startswith('/static/') and not request.path.startswith('/api/logs/'):
             app.logger.info(f"{request.method} {request.path} - {response.status_code}")
 
-            # 记录到系统日志（避免API请求日志无限循环）
-            if not request.path.startswith('/api/logs/'):
-                try:
-                    from routes.logs import add_system_log
-
-                    # 根据状态码确定日志级别
-                    if response.status_code >= 500:
-                        level = 'error'
-                    elif response.status_code >= 400:
-                        level = 'warn'
-                    else:
-                        level = 'info'
-
-                    add_system_log(
-                        level=level,
-                        source='api',
-                        message=f'{request.method} {request.path} - {response.status_code}',
-                        ip_address=request.remote_addr,
-                        context={
-                            'method': request.method,
-                            'path': request.path,
-                            'status_code': response.status_code,
-                            'user_agent': request.headers.get('User-Agent', '')
-                        }
-                    )
-                except ImportError:
-                    # 如果日志模块不存在，跳过系统日志记录
-                    pass
+            # 简化的API日志记录
+            if not request.path.startswith('/api/logs/') and response.status_code >= 400:
+                # 只记录错误请求到应用日志
+                if response.status_code >= 500:
+                    app.logger.error(f'API错误: {request.method} {request.path} - {response.status_code} | IP: {request.remote_addr}')
+                elif response.status_code >= 400:
+                    app.logger.warning(f'API警告: {request.method} {request.path} - {response.status_code} | IP: {request.remote_addr}')
 
         return response
 
