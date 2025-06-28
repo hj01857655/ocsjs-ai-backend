@@ -442,6 +442,174 @@ def register_blueprints(app):
             ]
         }
 
+    @app.route('/api/docs-categories')
+    def api_docs_categories():
+        """API 分类列表 - 供前端使用"""
+        return {
+            'categories': [
+                {
+                    'id': 'db-monitor',
+                    'name': '数据库监控',
+                    'description': '数据库连接、统计、健康检查等监控功能',
+                    'icon': '📊',
+                    'color': '#007bff',
+                    'endpoints': [
+                        'test-connection', 'stats', 'health', 'optimize',
+                        'query-stats', 'pool-status', 'railway-info', 'reset-stats'
+                    ]
+                },
+                {
+                    'id': 'table-management',
+                    'name': '表管理',
+                    'description': '数据表的查看、管理、查询、维护等功能',
+                    'icon': '🗄️',
+                    'color': '#28a745',
+                    'endpoints': [
+                        'tables', 'structure', 'columns', 'indexes', 'data',
+                        'query', 'export', 'analyze', 'optimize', 'repair'
+                    ]
+                }
+            ]
+        }
+
+    @app.route('/api/docs-endpoints/<category>')
+    def api_docs_endpoints_by_category(category):
+        """按分类获取接口列表 - 供前端使用"""
+        all_endpoints = api_docs_endpoints().get_json()
+
+        if category == 'db-monitor':
+            return {'endpoints': all_endpoints.get('db_monitor', [])}
+        elif category == 'table-management':
+            return {'endpoints': all_endpoints.get('table_management', [])}
+        else:
+            return {'error': 'Category not found'}, 404
+
+    @app.route('/api/docs-search')
+    def api_docs_search():
+        """搜索 API 接口 - 供前端使用"""
+        query = request.args.get('q', '').lower()
+        if not query:
+            return {'results': []}
+
+        all_endpoints = api_docs_endpoints().get_json()
+        results = []
+
+        # 搜索数据库监控接口
+        for endpoint in all_endpoints.get('db_monitor', []):
+            if (query in endpoint.get('name', '').lower() or
+                query in endpoint.get('description', '').lower() or
+                query in endpoint.get('path', '').lower()):
+                endpoint['category'] = '数据库监控'
+                results.append(endpoint)
+
+        # 搜索表管理接口
+        for endpoint in all_endpoints.get('table_management', []):
+            if (query in endpoint.get('name', '').lower() or
+                query in endpoint.get('description', '').lower() or
+                query in endpoint.get('path', '').lower()):
+                endpoint['category'] = '表管理'
+                results.append(endpoint)
+
+        return {
+            'query': query,
+            'total': len(results),
+            'results': results
+        }
+
+    @app.route('/api/docs-examples')
+    def api_docs_examples():
+        """API 使用示例 - 供前端使用"""
+        return {
+            'javascript': {
+                'test_connection': '''// 测试数据库连接
+fetch('/api/db-monitor/test-connection', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' }
+})
+.then(response => response.json())
+.then(data => console.log(data));''',
+
+                'get_tables': '''// 获取所有表
+fetch('/api/table-management/tables')
+.then(response => response.json())
+.then(data => console.log(data));''',
+
+                'execute_query': '''// 执行查询
+fetch('/api/table-management/query', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    sql: 'SELECT * FROM information_schema.tables LIMIT 5'
+  })
+})
+.then(response => response.json())
+.then(data => console.log(data));'''
+            },
+            'curl': {
+                'test_connection': '''# 测试数据库连接
+curl -X POST https://ocsjs-ai-backend-production.up.railway.app/api/db-monitor/test-connection \\
+  -H "Content-Type: application/json"''',
+
+                'get_tables': '''# 获取所有表
+curl https://ocsjs-ai-backend-production.up.railway.app/api/table-management/tables''',
+
+                'execute_query': '''# 执行查询
+curl -X POST https://ocsjs-ai-backend-production.up.railway.app/api/table-management/query \\
+  -H "Content-Type: application/json" \\
+  -d '{"sql": "SELECT * FROM information_schema.tables LIMIT 5"}'
+'''
+            },
+            'python': {
+                'test_connection': '''# 测试数据库连接
+import requests
+
+response = requests.post(
+    'https://ocsjs-ai-backend-production.up.railway.app/api/db-monitor/test-connection',
+    headers={'Content-Type': 'application/json'}
+)
+print(response.json())''',
+
+                'execute_query': '''# 执行查询
+import requests
+
+response = requests.post(
+    'https://ocsjs-ai-backend-production.up.railway.app/api/table-management/query',
+    headers={'Content-Type': 'application/json'},
+    json={
+        'sql': 'SELECT * FROM information_schema.tables LIMIT 5'
+    }
+)
+print(response.json())'''
+            }
+        }
+
+    @app.route('/api/docs-status')
+    def api_docs_status():
+        """API 状态信息 - 供前端使用"""
+        return {
+            'status': 'active',
+            'version': '1.0.0',
+            'last_updated': '2025-06-28',
+            'total_endpoints': 23,
+            'authentication_required': False,
+            'database_connection': 'Railway MySQL',
+            'features': [
+                '100% 数据库对接',
+                '无需认证访问',
+                '实时数据查询',
+                '表管理功能',
+                '性能监控',
+                '优化建议'
+            ],
+            'supported_operations': [
+                'SELECT 查询',
+                '表结构查看',
+                '数据导出',
+                '表优化',
+                '连接监控'
+            ]
+        }
+
 def register_error_handlers(app):
     """注册错误处理器"""
 
