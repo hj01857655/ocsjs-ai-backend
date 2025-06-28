@@ -71,7 +71,6 @@ from routes.cache_management import cache_bp
 from routes.db_monitor import db_monitor_bp
 from routes.system_monitor import system_monitor_bp
 from routes.table_management import table_management_bp
-from api_docs import create_api_docs, create_custom_api_docs
 
 # 导入服务
 from services.cache import get_cache
@@ -246,32 +245,201 @@ def register_blueprints(app):
     app.register_blueprint(system_monitor_bp, url_prefix='/api/system-monitor')
     app.register_blueprint(table_management_bp, url_prefix='/api/table-management')
 
-    # 创建 API 文档
-    try:
-        api = create_api_docs(app)
-        print("✅ API 文档已启用")
-    except Exception as e:
-        print(f"⚠️ API 文档启用失败: {str(e)}")
-
-    # 添加自定义 API 文档路由
-    @app.route('/api/docs-custom')
-    def api_docs_custom():
-        """自定义 API 文档页面"""
-        try:
-            from flask import render_template
-            return render_template('api_docs.html')
-        except:
-            return create_custom_api_docs()
-
+    # API 文档数据接口
     @app.route('/api/docs-info')
     def api_docs_info():
-        """API 文档信息"""
+        """API 文档信息 - 供前端使用"""
         return {
-            'swagger_ui': '/api/docs/',
-            'custom_docs': '/api/docs-custom',
-            'total_endpoints': 25,
-            'categories': ['数据库监控', '表管理'],
-            'authentication': '无需认证（测试模式）'
+            'title': 'EduBrain AI 数据库管理 API',
+            'version': '1.0.0',
+            'description': '完整的数据库管理和监控 API',
+            'base_url': request.host_url.rstrip('/'),
+            'total_endpoints': 23,
+            'categories': [
+                {
+                    'name': '数据库监控',
+                    'description': '数据库连接、统计、健康检查等监控功能',
+                    'endpoint_count': 8
+                },
+                {
+                    'name': '表管理',
+                    'description': '数据表的查看、管理、查询、维护等功能',
+                    'endpoint_count': 15
+                }
+            ],
+            'authentication': {
+                'required': False,
+                'type': 'none',
+                'note': '当前所有接口无需认证（测试模式）'
+            },
+            'database': {
+                'type': 'MySQL',
+                'provider': 'Railway',
+                'connection': '100% 真实数据库对接'
+            }
+        }
+
+    @app.route('/api/docs-endpoints')
+    def api_docs_endpoints():
+        """API 接口列表 - 供前端使用"""
+        return {
+            'db_monitor': [
+                {
+                    'method': 'POST',
+                    'path': '/api/db-monitor/test-connection',
+                    'name': '测试数据库连接',
+                    'description': '测试数据库连接状态，获取连接信息和性能指标',
+                    'auth_required': False,
+                    'parameters': [],
+                    'response_example': {
+                        'success': True,
+                        'data': {
+                            'database_info': {
+                                'host': 'interchange.proxy.rlwy.net',
+                                'port': 49225,
+                                'database': 'railway'
+                            },
+                            'connection_time': 45.67,
+                            'database_version': '8.0.35',
+                            'connection_status': 'success'
+                        }
+                    }
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/db-monitor/stats',
+                    'name': '获取数据库统计',
+                    'description': '获取数据库连接池统计、查询统计和性能指标',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/db-monitor/health',
+                    'name': '数据库健康检查',
+                    'description': '检查数据库健康状态和连接质量',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/db-monitor/optimize',
+                    'name': '获取优化建议',
+                    'description': '基于实际数据库分析生成优化建议',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/db-monitor/query-stats',
+                    'name': '查询统计信息',
+                    'description': '获取详细的查询统计信息',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/db-monitor/pool-status',
+                    'name': '连接池状态',
+                    'description': '获取数据库连接池详细状态',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/db-monitor/railway-info',
+                    'name': 'Railway 环境信息',
+                    'description': '获取 Railway 环境和数据库配置信息',
+                    'auth_required': False
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/db-monitor/reset-stats',
+                    'name': '重置统计信息',
+                    'description': '重置数据库监控统计数据',
+                    'auth_required': False
+                }
+            ],
+            'table_management': [
+                {
+                    'method': 'GET',
+                    'path': '/api/table-management/tables',
+                    'name': '获取所有表',
+                    'description': '获取数据库中所有表的列表和基本信息',
+                    'auth_required': False
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/table-management/tables/{table_name}/structure',
+                    'name': '获取表结构',
+                    'description': '获取指定表的结构信息',
+                    'auth_required': False,
+                    'parameters': [
+                        {
+                            'name': 'table_name',
+                            'type': 'string',
+                            'location': 'path',
+                            'required': True,
+                            'description': '表名'
+                        }
+                    ]
+                },
+                {
+                    'method': 'GET',
+                    'path': '/api/table-management/tables/{table_name}/data',
+                    'name': '获取表数据',
+                    'description': '获取指定表的数据（支持分页）',
+                    'auth_required': False,
+                    'parameters': [
+                        {
+                            'name': 'table_name',
+                            'type': 'string',
+                            'location': 'path',
+                            'required': True,
+                            'description': '表名'
+                        },
+                        {
+                            'name': 'page',
+                            'type': 'integer',
+                            'location': 'query',
+                            'required': False,
+                            'default': 1,
+                            'description': '页码'
+                        },
+                        {
+                            'name': 'per_page',
+                            'type': 'integer',
+                            'location': 'query',
+                            'required': False,
+                            'default': 20,
+                            'description': '每页数量'
+                        }
+                    ]
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/table-management/query',
+                    'name': '执行SQL查询',
+                    'description': '执行自定义的SELECT查询语句',
+                    'auth_required': False,
+                    'parameters': [
+                        {
+                            'name': 'sql',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': True,
+                            'description': 'SQL查询语句（只支持SELECT）'
+                        },
+                        {
+                            'name': 'limit',
+                            'type': 'integer',
+                            'location': 'body',
+                            'required': False,
+                            'default': 100,
+                            'description': '结果限制数量'
+                        }
+                    ],
+                    'request_example': {
+                        'sql': 'SELECT * FROM information_schema.tables LIMIT 5',
+                        'limit': 100
+                    }
+                }
+            ]
         }
 
 def register_error_handlers(app):
