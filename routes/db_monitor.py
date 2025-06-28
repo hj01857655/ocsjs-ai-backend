@@ -116,8 +116,7 @@ def reset_db_stats(current_user):
         })
 
 @db_monitor_bp.route('/test-connection', methods=['POST'])
-@token_required
-def test_db_connection(current_user):
+def test_db_connection():
     """测试数据库连接"""
     try:
         import time
