@@ -183,11 +183,21 @@ https://your-app.railway.app/api/api-proxy-management/test-status
 ```
 说明环境变量配置有问题。
 
-## 📋 完整的 Railway 环境变量配置清单
+## 📋 当前 Railway 环境变量配置
 
-在 Railway 项目设置中，确保以下环境变量已正确配置：
+### ✅ 已配置的环境变量（后端服务）
+```
+DATABASE_URL="${{MySQL.DATABASE_URL}}"
+MYSQL_URL="${{MySQL.MYSQL_URL}}"
+```
 
-### 数据库环境变量（Railway 自动提供）
+这些模板变量会自动解析为：
+```
+DATABASE_URL=mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway
+MYSQL_URL=mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway
+```
+
+### 🔧 Railway MySQL 服务自动提供的环境变量
 ```
 MYSQL_DATABASE=railway
 MYSQLUSER=root
@@ -196,5 +206,10 @@ MYSQLHOST=${{RAILWAY_PRIVATE_DOMAIN}}
 MYSQLPORT=3306
 RAILWAY_TCP_PROXY_DOMAIN=interchange.proxy.rlwy.net
 RAILWAY_TCP_PROXY_PORT=49225
-DATABASE_URL=mysql://root:kBipFtzTRrpZzQrLOGEeYaXxUHUHIhXk@interchange.proxy.rlwy.net:49225/railway
 ```
+
+### 🎯 配置状态
+- ✅ **数据库连接**：已配置模板变量
+- ✅ **环境检测**：系统会自动检测 Railway 环境
+- ✅ **多重备用**：支持多种连接方式
+- ✅ **本地兼容**：本地开发无需修改
