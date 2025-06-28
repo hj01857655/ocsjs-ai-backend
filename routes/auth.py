@@ -34,6 +34,27 @@ def add_system_log(level='info', source='system', message='', user_id=None, ip_a
 auth_bp = Blueprint('auth', __name__)
 logger = get_logger(__name__)
 
+@auth_bp.route('/test', methods=['GET'])
+def test_auth():
+    """测试认证模块"""
+    try:
+        # 测试数据库连接
+        user_count = User.query.count()
+        return jsonify({
+            'success': True,
+            'message': '认证模块正常',
+            'data': {
+                'user_count': user_count,
+                'database_connected': True
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'认证模块错误: {str(e)}',
+            'error_type': type(e).__name__
+        }), 500
+
 @auth_bp.route('/login', methods=['POST'])
 def login():
     """用户登录"""
@@ -140,10 +161,15 @@ def login():
         })
 
     except Exception as e:
+        db.session.rollback()
         logger.error(f"登录异常: {str(e)}")
+        logger.error(f"异常类型: {type(e).__name__}")
+        import traceback
+        logger.error(f"异常堆栈: {traceback.format_exc()}")
         return jsonify({
             'success': False,
-            'message': '登录失败，请稍后重试'
+            'message': f'登录失败: {str(e)}',
+            'error_type': type(e).__name__
         }), 500
 
 @auth_bp.route('/register', methods=['POST'])
