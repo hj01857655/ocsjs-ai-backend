@@ -63,6 +63,7 @@ from routes.auth import auth_bp
 from routes.questions import questions_bp
 from routes.db_monitor import db_monitor_bp
 from routes.table_management import table_management_bp
+from routes.proxy_management import proxy_management_bp
 
 # 已删除的非核心模块：
 # from routes.question_management import question_management_bp
@@ -208,13 +209,16 @@ def create_app():
 
     # 记录系统启动日志
     with app.app_context():
-        from routes.logs import add_system_log
-        add_system_log(
-            level='info',
-            source='system',
-            message='系统启动完成',
-            context={'version': '1.0.0', 'environment': app.config.get('ENV', 'development')}
-        )
+        try:
+            from routes.logs import add_system_log
+            add_system_log(
+                level='info',
+                source='system',
+                message='系统启动完成',
+                context={'version': '1.0.0', 'environment': app.config.get('ENV', 'development')}
+            )
+        except ImportError:
+            app.logger.info("系统启动完成 - 日志模块未找到，使用标准日志")
 
     return app
 
@@ -236,6 +240,7 @@ def register_blueprints(app):
     app.register_blueprint(questions_bp, url_prefix='/api/questions')         # 问答 - 核心功能
     app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')       # 数据库监控 - 必需
     app.register_blueprint(table_management_bp, url_prefix='/api/table-management')  # 表管理 - 必需
+    app.register_blueprint(proxy_management_bp, url_prefix='/api/proxy-management')  # 代理管理 - 恢复
 
     # 以下模块已删除（非核心功能）：
     # - question_management_bp (题库管理 - 复杂功能)
@@ -256,7 +261,7 @@ def register_blueprints(app):
             'version': '1.0.0',
             'description': '精简的智能问答系统 API - 只包含核心功能',
             'base_url': request.host_url.rstrip('/'),
-            'total_endpoints': 35,  # 精简后的接口数
+            'total_endpoints': 41,  # 恢复代理管理后的接口数
             'categories': [
                 {
                     'name': '认证授权',
@@ -277,6 +282,11 @@ def register_blueprints(app):
                     'name': '表管理',
                     'description': '数据表的查看、管理、查询、维护等功能',
                     'endpoint_count': 15
+                },
+                {
+                    'name': '代理管理',
+                    'description': '代理服务器的添加、删除、测试、状态管理',
+                    'endpoint_count': 6
                 }
             ],
             'authentication': {
@@ -564,6 +574,116 @@ def register_blueprints(app):
                         'sql': 'SELECT * FROM information_schema.tables LIMIT 5',
                         'limit': 100
                     }
+                }
+            ],
+            'proxy_management': [
+                {
+                    'method': 'GET',
+                    'path': '/api/proxy-management/list',
+                    'name': '获取代理列表',
+                    'description': '获取所有配置的代理服务器列表',
+                    'auth_required': True,
+                    'parameters': [
+                        {
+                            'name': 'page',
+                            'type': 'integer',
+                            'location': 'query',
+                            'required': False,
+                            'default': 1,
+                            'description': '页码'
+                        },
+                        {
+                            'name': 'size',
+                            'type': 'integer',
+                            'location': 'query',
+                            'required': False,
+                            'default': 20,
+                            'description': '每页数量'
+                        },
+                        {
+                            'name': 'status',
+                            'type': 'string',
+                            'location': 'query',
+                            'required': False,
+                            'description': '代理状态过滤 (active/inactive)'
+                        }
+                    ]
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/proxy-management/add',
+                    'name': '添加代理',
+                    'description': '添加新的代理服务器',
+                    'auth_required': True,
+                    'admin_required': True,
+                    'parameters': [
+                        {
+                            'name': 'host',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': True,
+                            'description': '代理服务器地址'
+                        },
+                        {
+                            'name': 'port',
+                            'type': 'integer',
+                            'location': 'body',
+                            'required': True,
+                            'description': '代理服务器端口'
+                        },
+                        {
+                            'name': 'type',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': True,
+                            'description': '代理类型 (http/https/socks5)'
+                        },
+                        {
+                            'name': 'username',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': False,
+                            'description': '代理用户名'
+                        },
+                        {
+                            'name': 'password',
+                            'type': 'string',
+                            'location': 'body',
+                            'required': False,
+                            'description': '代理密码'
+                        }
+                    ]
+                },
+                {
+                    'method': 'PUT',
+                    'path': '/api/proxy-management/{proxy_id}',
+                    'name': '更新代理',
+                    'description': '更新指定代理服务器的配置',
+                    'auth_required': True,
+                    'admin_required': True
+                },
+                {
+                    'method': 'DELETE',
+                    'path': '/api/proxy-management/{proxy_id}',
+                    'name': '删除代理',
+                    'description': '删除指定的代理服务器',
+                    'auth_required': True,
+                    'admin_required': True
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/proxy-management/{proxy_id}/test',
+                    'name': '测试代理',
+                    'description': '测试指定代理服务器的连通性',
+                    'auth_required': True
+                },
+                {
+                    'method': 'POST',
+                    'path': '/api/proxy-management/batch-test',
+                    'name': '批量测试代理',
+                    'description': '批量测试多个代理服务器的连通性',
+                    'auth_required': True,
+                    'admin_required': True
                 }
             ]
         }
@@ -929,28 +1049,32 @@ def register_middleware(app):
 
             # 记录到系统日志（避免API请求日志无限循环）
             if not request.path.startswith('/api/logs/'):
-                from routes.logs import add_system_log
+                try:
+                    from routes.logs import add_system_log
 
-                # 根据状态码确定日志级别
-                if response.status_code >= 500:
-                    level = 'error'
-                elif response.status_code >= 400:
-                    level = 'warn'
-                else:
-                    level = 'info'
+                    # 根据状态码确定日志级别
+                    if response.status_code >= 500:
+                        level = 'error'
+                    elif response.status_code >= 400:
+                        level = 'warn'
+                    else:
+                        level = 'info'
 
-                add_system_log(
-                    level=level,
-                    source='api',
-                    message=f'{request.method} {request.path} - {response.status_code}',
-                    ip_address=request.remote_addr,
-                    context={
-                        'method': request.method,
-                        'path': request.path,
-                        'status_code': response.status_code,
-                        'user_agent': request.headers.get('User-Agent', '')
-                    }
-                )
+                    add_system_log(
+                        level=level,
+                        source='api',
+                        message=f'{request.method} {request.path} - {response.status_code}',
+                        ip_address=request.remote_addr,
+                        context={
+                            'method': request.method,
+                            'path': request.path,
+                            'status_code': response.status_code,
+                            'user_agent': request.headers.get('User-Agent', '')
+                        }
+                    )
+                except ImportError:
+                    # 如果日志模块不存在，跳过系统日志记录
+                    pass
 
         return response
 

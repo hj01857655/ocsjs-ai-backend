@@ -169,14 +169,14 @@ class Config:
             f"&sql_mode=STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO"
         )
 
-    # 将数据库配置设置为类属性，以便外部导入
-    Config.SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI
-    Config.DB_TYPE = DB_TYPE
-    Config.DB_HOST = DB_HOST
-    Config.DB_PORT = DB_PORT
-    Config.DB_USER = DB_USER
-    Config.DB_PASSWORD = DB_PASSWORD
-    Config.DB_NAME = DB_NAME
+    # 数据库配置作为类属性
+    SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI
+    DB_TYPE = DB_TYPE
+    DB_HOST = DB_HOST
+    DB_PORT = DB_PORT
+    DB_USER = DB_USER
+    DB_PASSWORD = DB_PASSWORD
+    DB_NAME = DB_NAME
 
     # 数据库连接池配置 - 增强版本
     SQLALCHEMY_ENGINE_OPTIONS = {
