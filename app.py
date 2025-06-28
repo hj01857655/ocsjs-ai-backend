@@ -231,7 +231,7 @@ def register_blueprints(app):
     app.register_blueprint(questions_bp, url_prefix='/api/questions')         # 问答 - 核心功能
     app.register_blueprint(db_monitor_bp, url_prefix='/api/db-monitor')       # 数据库监控 - 必需
     app.register_blueprint(table_management_bp, url_prefix='/api/table-management')  # 表管理 - 必需
-    app.register_blueprint(proxy_management_bp, url_prefix='/api/proxy-management')  # 代理管理 - 恢复
+    app.register_blueprint(proxy_management_bp, url_prefix='/api/api-proxy-management')  # 代理管理 - 恢复
 
     # 以下模块已删除（非核心功能）：
     # - question_management_bp (题库管理 - 复杂功能)
@@ -570,7 +570,7 @@ def register_blueprints(app):
             'proxy_management': [
                 {
                     'method': 'GET',
-                    'path': '/api/proxy-management/list',
+                    'path': '/api/api-proxy-management/list',
                     'name': '获取代理列表',
                     'description': '获取所有配置的代理服务器列表',
                     'auth_required': True,
@@ -602,7 +602,7 @@ def register_blueprints(app):
                 },
                 {
                     'method': 'POST',
-                    'path': '/api/proxy-management/add',
+                    'path': '/api/api-proxy-management/add',
                     'name': '添加代理',
                     'description': '添加新的代理服务器',
                     'auth_required': True,
